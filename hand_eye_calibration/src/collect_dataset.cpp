@@ -98,7 +98,7 @@ int main(int argc, const char **argv) {
   const std::string arm_topic_name = vm["arm-topic"].as<std::string>();
   const std::string image_topic_name = vm["image-topic"].as<std::string>();
   output_path = fs::path(vm["output"].as<std::string>()) / "dataset";
-  std::string log_level = vm["log-level"].as<std::string>();
+  const std::string log_level = vm["log-level"].as<std::string>();
 
   // Setting logger level;
   std::optional<Level> level = magic_enum::enum_cast<Level>(log_level);
