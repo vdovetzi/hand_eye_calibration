@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>hand_eye_calibration</name>
+  <version>0.0.1</version>
+  <description>TODO: Package description</description>
+  <maintainer email="ilya.vdovets@gmail.com">vdovetzi</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <depend>magic_enum</depend>
+  <depend>ros_babel_fish</depend>
+  <depend>rclcpp</depend>
+  <depend>image_transport</depend>
+  <depend>cv_bridge</depend>
+  <depend>sensor_msgs</depend>
+  <depend>console_bridge_vendor</depend>
+  <depend>console_bridge</depend>
+  <depend>opencv</depend>
+  <depend>boost</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
