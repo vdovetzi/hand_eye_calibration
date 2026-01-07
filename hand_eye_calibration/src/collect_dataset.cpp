@@ -1,8 +1,4 @@
 // https://github.com/ros/class_loader/pull/199
-// "class_loader.ClassLoader: SEVERE WARNING!!!
-// Attempting to unload library while objects created by this loader exist in
-// the heap! You should delete your objects before attempting to unload the
-// library or destroying the ClassLoader. The library will NOT be unloaded."
 #include <console_bridge/console.h>
 
 #include <boost/program_options.hpp>
