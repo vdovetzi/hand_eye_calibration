@@ -106,7 +106,7 @@ int main(int argc, const char **argv) {
 
   logger->set_level(level.value());
   rcutils_ret_t res = rcutils_logging_set_logger_level(
-      DUMPER_LOGGERNAME, static_cast<int>(level.value()));
+      DUMPER_LOGGERNAME, static_cast<int>(*level));
   if (RCUTILS_RET_OK != res) {
     RCLCPP_WARN(*logger, "Error: unable to set desired logging level");
   }
