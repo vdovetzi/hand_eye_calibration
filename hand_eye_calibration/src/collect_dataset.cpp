@@ -3,7 +3,7 @@
 
 #include <boost/program_options.hpp>
 #include <cv_bridge/cv_bridge.hpp>
-#include <hand_eye_calibration/helpers.hpp>
+#include <hand_eye_calibration/collect_helpers.hpp>
 #include <image_transport/image_transport.hpp>
 #include <magic_enum.hpp>
 #include <opencv2/opencv.hpp>
@@ -400,6 +400,7 @@ int main(int argc, const char **argv) {
       while (n.load() != 0b00) {
         rclcpp::spin_some(node);
       }
+      RCLCPP_INFO(*logger, "Sample %ld saved!", img_cnt);
       continue;
     }
 
