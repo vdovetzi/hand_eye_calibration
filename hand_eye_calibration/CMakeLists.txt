@@ -29,6 +29,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(ros_babel_fish REQUIRED)
 find_package(console_bridge_vendor REQUIRED) # Provides console_bridge 0.4.0 on platforms without it.
 find_package(console_bridge REQUIRED)
+find_package(tf2 REQUIRED)
 
 
 find_package(OpenCV REQUIRED)
@@ -62,6 +63,16 @@ ament_target_dependencies(dataset_collector
 target_include_directories(dataset_collector PRIVATE ${OpenCV_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} include/)
 target_link_libraries(dataset_collector ${OpenCV_LIBS} ${Boost_LIBRARIES} csv magic_enum console_bridge::console_bridge)
 
+add_executable(calibrator src/calibrate.cpp)
+ament_target_dependencies(calibrator
+    rclcpp
+    geometry_msgs
+    sensor_msgs
+    tf2
+)
+target_include_directories(calibrator PRIVATE ${OpenCV_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} include/)
+target_link_libraries(calibrator ${OpenCV_LIBS} ${Boost_LIBRARIES} csv magic_enum console_bridge::console_bridge)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
@@ -81,6 +92,7 @@ endif()
 
 install(TARGETS
     dataset_collector
+    calibrator
     DESTINATION lib/${PROJECT_NAME}
 )
 
