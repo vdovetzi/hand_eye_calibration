@@ -9,8 +9,8 @@
 ![C++](https://img.shields.io/badge/C%2B%2B-20-blue)
 
 
-Minimal ROS 2 package for **hand–eye calibration** using OpenCV.  
-Includes tools for **dataset collection** and **offline calibration**.
+ROS2 package for **hand–eye calibration** using OpenCV.  
+Includes tools for **dataset collection** and **calibration**.
 
 ---
 
@@ -19,7 +19,7 @@ Includes tools for **dataset collection** and **offline calibration**.
 This package provides **two executable nodes**:
 
 - `dataset_collector` — interactive dataset recording
-- `calibrator` — offline hand–eye calibration
+- `calibrator` — hand–eye calibration
 
 ---
 
@@ -31,7 +31,7 @@ source install/setup.bash
 ```
 
 Requirements:
-- ROS 2
+- ROS2 Jazzy
 - C++20
 - OpenCV
 - Boost.ProgramOptions
@@ -92,7 +92,7 @@ ros2 run hand_eye_calibration dataset_collector \
 
 ## Node: `calibrator`
 
-Offline hand–eye calibration using `cv::calibrateHandEye()`.
+Hand–eye calibration using `cv::calibrateHandEye()`.
 
 ### Description
 
