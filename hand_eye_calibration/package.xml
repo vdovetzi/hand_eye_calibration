@@ -3,7 +3,7 @@
 <package format="3">
   <name>hand_eye_calibration</name>
   <version>0.0.1</version>
-  <description>TODO: Package description</description>
+  <description>Minimal ROS 2 package for hand–eye calibration using OpenCV.</description>
   <maintainer email="ilya.vdovets@gmail.com">vdovetzi</maintainer>
   <license>Apache-2.0</license>
 
