@@ -19,9 +19,16 @@ void ret(int32_t code) {
   exit(code);
 }
 
+void signalHandler([[maybe_unused]] int32_t signal) {
+  std::cout << "\nSIGINT (Ctrl+C) received. Shutting down gracefully..."
+            << std::endl;
+  ret(0);
+}
+
 // TODO: add opportunity to provide intrinsics in cli and thus not to find them
 // TODO: add YPR order for rotation
 int32_t main(int32_t argc, char **argv) {
+  signal(SIGINT, signalHandler);
   rclcpp::init(argc, argv);
 
   node = rclcpp::Node::make_shared("dataset_collector");
