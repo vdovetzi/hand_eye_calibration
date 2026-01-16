@@ -20,17 +20,17 @@ namespace po = boost::program_options;
 
 std::shared_ptr<rclcpp::Logger> logger;
 rclcpp::Node::SharedPtr node;
-std::shared_ptr<std::ofstream> out_file;
-BabelFishSubscription::SharedPtr arm_sub;
+std::shared_ptr<std::ofstream> outFile;
+BabelFishSubscription::SharedPtr armSub;
 std::shared_ptr<TSVWriter<std::ofstream>> writer;
-fs::path output_path;
-size_t img_cnt = 0;
+fs::path outputPath;
+size_t imgCount = 0;
 
 void ret(int32_t code) {
   writer.reset();
-  out_file.reset();
+  outFile.reset();
   logger.reset();
-  arm_sub.reset();
+  armSub.reset();
   node.reset();
   rclcpp::shutdown();
   cv::destroyAllWindows();
@@ -54,8 +54,8 @@ void SavePoseToFile(const Message &msg) {
 
 void SaveImageToFolder(cv::Mat &image) {
   // TODO: Add marker checking
-  cv::imwrite(output_path / IMG_FOLDERNAME /
-                  (std::to_string(img_cnt++) + ".png"),
+  cv::imwrite(outputPath / IMG_FOLDERNAME /
+                  (std::to_string(imgCount++) + ".png"),
               image);
   RCLCPP_DEBUG(*logger, "Image saved!");
 }
@@ -91,13 +91,13 @@ int main(int argc, const char **argv) {
   }
 
   // Getting parsed input
-  const std::string arm_topic_name = vm["arm-topic"].as<std::string>();
-  const std::string image_topic_name = vm["image-topic"].as<std::string>();
-  output_path = fs::path(vm["output"].as<std::string>()) / "dataset";
-  const std::string log_level = vm["log-level"].as<std::string>();
+  const std::string armTopicName = vm["arm-topic"].as<std::string>();
+  const std::string imageTopicName = vm["image-topic"].as<std::string>();
+  outputPath = fs::path(vm["output"].as<std::string>()) / "dataset";
+  const std::string logLevel = vm["log-level"].as<std::string>();
 
   // Setting logger level;
-  std::optional<Level> level = magic_enum::enum_cast<Level>(log_level);
+  std::optional<Level> level = magic_enum::enum_cast<Level>(logLevel);
 
   if (!level) {
     RCLCPP_ERROR(*logger, "Error: there is no such logger level");
@@ -120,25 +120,25 @@ int main(int argc, const char **argv) {
   // Ensure existing topics
   // TODO: get rid off sleep. Wait for topic to be availible with a time limit.
   // When exceeds it, exit with an error.
-  bool arm_topic_found = false;
-  bool image_topic_found = false;
+  bool armTopicFound = false;
+  bool imageTopicFound = false;
   rclcpp::sleep_for(2s); // Small sleep for fetching actual topics
   auto topics = node->get_topic_names_and_types();
   for (const auto &[topic_name, topic_types] : topics) {
     RCLCPP_DEBUG(*logger, "Topic: %s", topic_name.c_str());
-    if (topic_name == arm_topic_name) {
-      arm_topic_found = true;
-    } else if (topic_name == image_topic_name) {
-      image_topic_found = true;
+    if (topic_name == armTopicName) {
+      armTopicFound = true;
+    } else if (topic_name == imageTopicName) {
+      imageTopicFound = true;
     }
   }
 
-  if (!arm_topic_found) {
+  if (!armTopicFound) {
     RCLCPP_ERROR(*logger, "Error: provide existing arm-topic");
     ret(1);
   }
 
-  if (!image_topic_found) {
+  if (!imageTopicFound) {
     RCLCPP_ERROR(*logger, "Error: provide existing image-topic");
     ret(1);
   }
@@ -148,7 +148,7 @@ int main(int argc, const char **argv) {
   // in each branch
   // TODO: remove duplicated code and make a desired function for that
   bool create = true;
-  if (fs::exists(output_path) && fs::is_directory(output_path)) {
+  if (fs::exists(outputPath) && fs::is_directory(outputPath)) {
     bool stop = false;
     while (!stop) {
       RCLCPP_WARN(*logger, "Output directory already exits, delete it?[Y/n]");
@@ -157,7 +157,7 @@ int main(int argc, const char **argv) {
       switch (decision[0]) {
       case 'Y':
       case 'y': {
-        fs::remove_all(output_path);
+        fs::remove_all(outputPath);
         stop = true;
         create = true;
         break;
@@ -171,7 +171,7 @@ int main(int argc, const char **argv) {
         size_t cnt = 0;
         std::set<int32_t> files;
         for (const auto &entry :
-             fs::directory_iterator(output_path / IMG_FOLDERNAME)) {
+             fs::directory_iterator(outputPath / IMG_FOLDERNAME)) {
           if (entry.is_regular_file()) {
             const std::string &filename = entry.path().filename().string();
             if (std::regex_match(filename, matches, pattern)) {
@@ -194,7 +194,7 @@ int main(int argc, const char **argv) {
               switch (decision[0]) {
               case 'Y':
               case 'y': {
-                fs::remove_all(output_path);
+                fs::remove_all(outputPath);
                 stop = true;
                 create = true;
                 break;
@@ -215,7 +215,7 @@ int main(int argc, const char **argv) {
             }
           } else {
             create = false;
-            size_t number = std::stoi(matches[1].str());
+            const size_t number = std::stoi(matches[1].str());
             if (number - cnt > 1) {
               bool stop = false;
               while (!stop) {
@@ -229,7 +229,7 @@ int main(int argc, const char **argv) {
                 switch (decision[0]) {
                 case 'Y':
                 case 'y': {
-                  fs::remove_all(output_path);
+                  fs::remove_all(outputPath);
                   stop = true;
                   create = true;
                   break;
@@ -253,8 +253,8 @@ int main(int argc, const char **argv) {
           }
         }
         // Checking poses.csv
-        std::optional<size_t> n_rows_opt = CountPoses(output_path);
-        if (!n_rows_opt) {
+        std::optional<size_t> nRowsOpt = countPoses(outputPath);
+        if (!nRowsOpt) {
           bool stop = false;
           while (!stop) {
             RCLCPP_WARN(*logger, "Existing poses.csv is corrupted or empty. "
@@ -264,7 +264,7 @@ int main(int argc, const char **argv) {
             switch (decision[0]) {
             case 'Y':
             case 'y': {
-              fs::remove_all(output_path);
+              fs::remove_all(outputPath);
               stop = true;
               create = true;
               break;
@@ -283,9 +283,9 @@ int main(int argc, const char **argv) {
             }
           }
         } else {
-          const size_t n_rows = *n_rows_opt;
-          if (n_rows == cnt) {
-            img_cnt = cnt;
+          const size_t nRows = *nRowsOpt;
+          if (nRows == cnt) {
+            imgCount = cnt;
           } else {
             bool stop = false;
             while (!stop) {
@@ -293,13 +293,13 @@ int main(int argc, const char **argv) {
                           "Existing poses.csv contains wrong rows number: %ld, "
                           "instead of %ld. "
                           "Dataset is corrupted, remove it?[Y/n]",
-                          n_rows, cnt);
+                          nRows, cnt);
               std::string decision;
               std::cin >> decision;
               switch (decision[0]) {
               case 'Y':
               case 'y': {
-                fs::remove_all(output_path);
+                fs::remove_all(outputPath);
                 stop = true;
                 create = true;
                 break;
@@ -331,10 +331,10 @@ int main(int argc, const char **argv) {
   }
   if (create) {
     try {
-      fs::create_directory(output_path);
-      fs::create_directory(output_path / IMG_FOLDERNAME);
+      fs::create_directory(outputPath);
+      fs::create_directory(outputPath / IMG_FOLDERNAME);
       RCLCPP_INFO(*logger, "Folder created successfully: %s",
-                  output_path.string().data());
+                  outputPath.string().data());
     } catch (const fs::filesystem_error &e) {
       RCLCPP_ERROR(*logger, "Error: %s", e.what());
       ret(1);
@@ -342,10 +342,10 @@ int main(int argc, const char **argv) {
   }
 
   // Create tsv writer for gripper poses
-  out_file = std::make_shared<std::ofstream>(output_path / CSV_FILENAME,
-                                             std::ios::app);
+  outFile =
+      std::make_shared<std::ofstream>(outputPath / CSV_FILENAME, std::ios::app);
   writer = std::make_shared<TSVWriter<std::ofstream>>(
-      csv::make_tsv_writer(*out_file));
+      csv::make_tsv_writer(*outFile));
   csv::set_decimal_places(5);
 
   // Create sync atomic
@@ -356,7 +356,7 @@ int main(int argc, const char **argv) {
   auto it = std::make_unique<ImageTransport>(node);
   auto th = std::make_unique<TransportHints>(node.get(), "compressed");
   auto image_sub = it->subscribe(
-      image_topic_name, 1,
+      imageTopicName, 1,
       [&image, &n](const Image::ConstSharedPtr &img_msg) {
         image = cv_bridge::toCvCopy(*img_msg, BGR8)->image;
         if (((n.load() & 0b10) >> 1) == 1) {
@@ -367,15 +367,15 @@ int main(int argc, const char **argv) {
       nullptr, th.get());
 
   // Arm topic subscription
-  std::string arm_topic_type;
+  std::string armTopicType;
   auto fish = BabelFish::make_shared();
-  arm_sub = fish->create_subscription(
-      *node, arm_topic_name, 1,
-      [&arm_topic_type, &n](ros_babel_fish::CompoundMessage::SharedPtr msg) {
+  armSub = fish->create_subscription(
+      *node, armTopicName, 1,
+      [&armTopicType, &n](ros_babel_fish::CompoundMessage::SharedPtr msg) {
         // DEBUG info
-        if (arm_topic_type != msg->name()) {
-          arm_topic_type = msg->name();
-          RCLCPP_DEBUG(*logger, "Pose topic type: %s", arm_topic_type.c_str());
+        if (armTopicType != msg->name()) {
+          armTopicType = msg->name();
+          RCLCPP_DEBUG(*logger, "Pose topic type: %s", armTopicType.c_str());
         }
 
         if ((n.load() & 0b01) == 1) {
@@ -400,7 +400,7 @@ int main(int argc, const char **argv) {
       while (n.load() != 0b00) {
         rclcpp::spin_some(node);
       }
-      RCLCPP_INFO(*logger, "Sample %ld saved!", img_cnt);
+      RCLCPP_INFO(*logger, "Sample %ld saved!", imgCount);
       continue;
     }
 
@@ -408,23 +408,23 @@ int main(int argc, const char **argv) {
       RCLCPP_INFO(*logger, "Collecting dataset finished!");
 
       // Counting total number of images and poses
-      std::optional<size_t> poses_count_opt = CountPoses(output_path);
-      if (!poses_count_opt) {
+      std::optional<size_t> posesCountOpt = countPoses(outputPath);
+      if (!posesCountOpt) {
         RCLCPP_ERROR(*logger, "Error: cannot count rows in poses.csv. Maybe "
                               "file is empty or corrupted?");
         ret(1);
       }
-      std::optional<size_t> images_count_opt = CountImages(output_path);
-      if (!images_count_opt) {
+      std::optional<size_t> imagesCountOpt = countImages(outputPath);
+      if (!imagesCountOpt) {
         RCLCPP_ERROR(*logger, "Error: cannot count images in images/. Maybe "
                               "directory was corrupted?");
         ret(1);
       }
-      const size_t images_count = *images_count_opt;
-      const size_t poses_count = *poses_count_opt;
+      const size_t imagesCount = *imagesCountOpt;
+      const size_t posesCount = *posesCountOpt;
 
       // Should be equal
-      if (images_count != poses_count) {
+      if (imagesCount != posesCount) {
         RCLCPP_ERROR(
             *logger,
             "Error: amount of images and poses are not equal. Something "
@@ -433,7 +433,7 @@ int main(int argc, const char **argv) {
         ret(1);
       }
 
-      RCLCPP_INFO(*logger, "Dataset length is %ld", images_count);
+      RCLCPP_INFO(*logger, "Dataset length is %ld", imagesCount);
 
       // TODO: calculate some statistics on collected dataset.
 

@@ -31,9 +31,9 @@ inline CSVReader getReader(const fs::path &path) {
 }
 
 // Count poses and returns that count
-inline std::optional<size_t> countPoses(const fs::path &outputPath) {
+inline std::optional<size_t> countPoses(const fs::path &datasetPath) {
   try {
-    CSVReader reader = getReader(outputPath / CSV_FILENAME);
+    CSVReader reader = getReader(datasetPath / CSV_FILENAME);
     size_t count = 0;
     // Reading rows
     for (auto &row : reader) {
@@ -50,11 +50,11 @@ inline std::optional<size_t> countPoses(const fs::path &outputPath) {
 }
 
 // Count images in images/ folder and returns that count
-inline std::optional<size_t> countImages(const fs::path &outputPath) {
+inline std::optional<size_t> countImages(const fs::path &datasetPath) {
   size_t count = 0;
   try {
     for (const auto &entry :
-         fs::directory_iterator(outputPath / IMG_FOLDERNAME)) {
+         fs::directory_iterator(datasetPath / IMG_FOLDERNAME)) {
       if (entry.is_regular_file()) {
         const std::string &filename = entry.path().filename().string();
         if (std::regex_match(filename, PATTERN)) {

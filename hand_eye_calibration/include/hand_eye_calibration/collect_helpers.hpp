@@ -2,7 +2,6 @@
 
 // TODO: add docstrings to everywhere
 
-#include "geometry_msgs/msg/transform.hpp"
 #include "geometry_msgs/msg/pose.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "geometry_msgs/msg/transform_stamped.hpp"
@@ -27,14 +26,14 @@ constexpr const char *HELPER_LOGGERNAME = "helper";
 using SerializedMsg = std::shared_ptr<const rclcpp::SerializedMessage>;
 
 inline SerializedMsg
-catch_msg(std::string ros_topic_name, std::string ros_topic_type,
+catch_msg(std::string ros_topic_name, std::string rosTopicType,
           rclcpp::GenericSubscription::SharedPtr &subscription,
           rclcpp::Node::SharedPtr node) {
-  SerializedMsg caught_msg;
+  SerializedMsg caughtMsg;
   auto promise = std::make_shared<std::promise<SerializedMsg>>();
   auto future = promise->get_future();
   subscription = rclcpp::create_generic_subscription(
-      node->get_node_topics_interface(), ros_topic_name, ros_topic_type, 1,
+      node->get_node_topics_interface(), ros_topic_name, rosTopicType, 1,
       [promise, node](SerializedMsg msg) {
         promise->set_value(msg);
         RCLCPP_DEBUG(node->get_logger(), "Got msg!");
@@ -42,7 +41,7 @@ catch_msg(std::string ros_topic_name, std::string ros_topic_type,
 
   rclcpp::spin_until_future_complete(node, future);
 
-  return caught_msg;
+  return caughtMsg;
 }
 
 void dumpMessageContent(const ros_babel_fish::Message &message,
@@ -100,54 +99,54 @@ void dumpArray(const T &message, std::vector<std::string> &dump) {
 inline void dumpPose(const ros_babel_fish::CompoundMessage &pose,
                      std::vector<std::string> &dump, bool stamped = false) {
   if (stamped) {
-    auto pose_msg = pose.message<geometry_msgs::msg::PoseStamped>();
-    dump.emplace_back(std::to_string(pose_msg->pose.position.x));
-    dump.emplace_back(std::to_string(pose_msg->pose.position.y));
-    dump.emplace_back(std::to_string(pose_msg->pose.position.z));
-    dump.emplace_back(std::to_string(pose_msg->pose.orientation.x));
-    dump.emplace_back(std::to_string(pose_msg->pose.orientation.y));
-    dump.emplace_back(std::to_string(pose_msg->pose.orientation.z));
-    dump.emplace_back(std::to_string(pose_msg->pose.orientation.w));
+    auto poseMsg = pose.message<geometry_msgs::msg::PoseStamped>();
+    dump.emplace_back(std::to_string(poseMsg->pose.position.x));
+    dump.emplace_back(std::to_string(poseMsg->pose.position.y));
+    dump.emplace_back(std::to_string(poseMsg->pose.position.z));
+    dump.emplace_back(std::to_string(poseMsg->pose.orientation.x));
+    dump.emplace_back(std::to_string(poseMsg->pose.orientation.y));
+    dump.emplace_back(std::to_string(poseMsg->pose.orientation.z));
+    dump.emplace_back(std::to_string(poseMsg->pose.orientation.w));
     return;
   }
-  auto pose_msg = pose.message<geometry_msgs::msg::Pose>();
-  dump.emplace_back(std::to_string(pose_msg->position.x));
-  dump.emplace_back(std::to_string(pose_msg->position.y));
-  dump.emplace_back(std::to_string(pose_msg->position.z));
-  dump.emplace_back(std::to_string(pose_msg->orientation.x));
-  dump.emplace_back(std::to_string(pose_msg->orientation.y));
-  dump.emplace_back(std::to_string(pose_msg->orientation.z));
-  dump.emplace_back(std::to_string(pose_msg->orientation.w));
+  auto poseMsg = pose.message<geometry_msgs::msg::Pose>();
+  dump.emplace_back(std::to_string(poseMsg->position.x));
+  dump.emplace_back(std::to_string(poseMsg->position.y));
+  dump.emplace_back(std::to_string(poseMsg->position.z));
+  dump.emplace_back(std::to_string(poseMsg->orientation.x));
+  dump.emplace_back(std::to_string(poseMsg->orientation.y));
+  dump.emplace_back(std::to_string(poseMsg->orientation.z));
+  dump.emplace_back(std::to_string(poseMsg->orientation.w));
 }
 
 inline void dumpTransform(const ros_babel_fish::CompoundMessage &tf,
                           std::vector<std::string> &dump,
                           bool stamped = false) {
   if (stamped) {
-    auto tf_msg = tf.message<geometry_msgs::msg::TransformStamped>();
-    dump.emplace_back(std::to_string(tf_msg->transform.translation.x));
-    dump.emplace_back(std::to_string(tf_msg->transform.translation.y));
-    dump.emplace_back(std::to_string(tf_msg->transform.translation.z));
-    dump.emplace_back(std::to_string(tf_msg->transform.rotation.x));
-    dump.emplace_back(std::to_string(tf_msg->transform.rotation.y));
-    dump.emplace_back(std::to_string(tf_msg->transform.rotation.z));
-    dump.emplace_back(std::to_string(tf_msg->transform.rotation.w));
+    auto tfMsg = tf.message<geometry_msgs::msg::TransformStamped>();
+    dump.emplace_back(std::to_string(tfMsg->transform.translation.x));
+    dump.emplace_back(std::to_string(tfMsg->transform.translation.y));
+    dump.emplace_back(std::to_string(tfMsg->transform.translation.z));
+    dump.emplace_back(std::to_string(tfMsg->transform.rotation.x));
+    dump.emplace_back(std::to_string(tfMsg->transform.rotation.y));
+    dump.emplace_back(std::to_string(tfMsg->transform.rotation.z));
+    dump.emplace_back(std::to_string(tfMsg->transform.rotation.w));
     return;
   }
-  auto tf_msg = tf.message<geometry_msgs::msg::Transform>();
-  dump.emplace_back(std::to_string(tf_msg->translation.x));
-  dump.emplace_back(std::to_string(tf_msg->translation.y));
-  dump.emplace_back(std::to_string(tf_msg->translation.z));
-  dump.emplace_back(std::to_string(tf_msg->rotation.x));
-  dump.emplace_back(std::to_string(tf_msg->rotation.y));
-  dump.emplace_back(std::to_string(tf_msg->rotation.z));
-  dump.emplace_back(std::to_string(tf_msg->rotation.w));
+  auto tfMsg = tf.message<geometry_msgs::msg::Transform>();
+  dump.emplace_back(std::to_string(tfMsg->translation.x));
+  dump.emplace_back(std::to_string(tfMsg->translation.y));
+  dump.emplace_back(std::to_string(tfMsg->translation.z));
+  dump.emplace_back(std::to_string(tfMsg->rotation.x));
+  dump.emplace_back(std::to_string(tfMsg->rotation.y));
+  dump.emplace_back(std::to_string(tfMsg->rotation.z));
+  dump.emplace_back(std::to_string(tfMsg->rotation.w));
 }
 
 inline void dumpJoints(const ros_babel_fish::CompoundMessage &joints,
                        std::vector<std::string> &dump) {
-  auto joints_msg = joints.message<sensor_msgs::msg::JointState>();
-  for (const double &p : joints_msg->position) {
+  auto jointsMsg = joints.message<sensor_msgs::msg::JointState>();
+  for (const double &p : jointsMsg->position) {
     dump.emplace_back(std::to_string(p));
   }
 }
@@ -228,11 +227,11 @@ inline void dumpMessageContent(const ros_babel_fish::Message &message,
 }
 
 // Count poses and returns that count
-inline std::optional<size_t> CountPoses(const fs::path &output_path) {
+inline std::optional<size_t> countPoses(const fs::path &outputPath) {
   CSVFormat format;
   format.delimiter('\t').no_header().quote(false);
   const std::string &full_path =
-      (output_path / CSV_FILENAME).relative_path().string();
+      (outputPath / CSV_FILENAME).relative_path().string();
   try {
     CSVReader reader(full_path, format);
     size_t count = 0;
@@ -250,12 +249,12 @@ inline std::optional<size_t> CountPoses(const fs::path &output_path) {
   }
 }
 
-inline std::optional<size_t> CountImages(const fs::path &output_path) {
+inline std::optional<size_t> countImages(const fs::path &datasetPath) {
   size_t count = 0;
   std::regex pattern(R"(^(\d+)\.png$)");
   try {
     for (const auto &entry :
-         fs::directory_iterator(output_path / IMG_FOLDERNAME)) {
+         fs::directory_iterator(datasetPath / IMG_FOLDERNAME)) {
       if (entry.is_regular_file()) {
         const std::string &filename = entry.path().filename().string();
         if (std::regex_match(filename, pattern)) {
