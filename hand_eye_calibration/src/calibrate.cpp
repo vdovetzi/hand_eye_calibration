@@ -7,7 +7,6 @@
 #include <opencv2/core.hpp>
 
 using Level = rclcpp::Logger::Level;
-using cv::utils::logging::LogLevel;
 namespace po = boost::program_options;
 
 std::shared_ptr<rclcpp::Logger> logger;
@@ -86,13 +85,6 @@ int32_t main(int32_t argc, char **argv) {
     RCLCPP_WARN(*logger, "Error: unable to set desired logging level");
   }
   console_bridge::setLogLevel(console_bridge::CONSOLE_BRIDGE_LOG_ERROR);
-
-  // Setting cv log-level
-  std::transform(log_level.begin(), log_level.end(), log_level.begin(),
-                 ::toupper);
-  cv::utils::logging::setLogLevel(*magic_enum::enum_cast<LogLevel>(
-      "LOG_LEVEL_" +
-      ((log_level.find("WARN") != std::string::npos) ? "WARNING" : log_level)));
 
   // Checks dataset existance and its correctness
   if (!validateDataset(dataset_path)) {
