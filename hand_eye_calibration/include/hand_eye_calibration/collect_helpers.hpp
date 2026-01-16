@@ -26,9 +26,9 @@ constexpr const char *HELPER_LOGGERNAME = "helper";
 using SerializedMsg = std::shared_ptr<const rclcpp::SerializedMessage>;
 
 inline SerializedMsg
-catch_msg(std::string ros_topic_name, std::string rosTopicType,
-          rclcpp::GenericSubscription::SharedPtr &subscription,
-          rclcpp::Node::SharedPtr node) {
+catchMsg(std::string ros_topic_name, std::string rosTopicType,
+         rclcpp::GenericSubscription::SharedPtr &subscription,
+         rclcpp::Node::SharedPtr node) {
   SerializedMsg caughtMsg;
   auto promise = std::make_shared<std::promise<SerializedMsg>>();
   auto future = promise->get_future();
