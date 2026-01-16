@@ -31,9 +31,9 @@ inline CSVReader getReader(const fs::path &path) {
 }
 
 // Count poses and returns that count
-inline std::optional<size_t> CountPoses(const fs::path &output_path) {
+inline std::optional<size_t> countPoses(const fs::path &outputPath) {
   try {
-    CSVReader reader = getReader(output_path / CSV_FILENAME);
+    CSVReader reader = getReader(outputPath / CSV_FILENAME);
     size_t count = 0;
     // Reading rows
     for (auto &row : reader) {
@@ -50,11 +50,11 @@ inline std::optional<size_t> CountPoses(const fs::path &output_path) {
 }
 
 // Count images in images/ folder and returns that count
-inline std::optional<size_t> CountImages(const fs::path &output_path) {
+inline std::optional<size_t> countImages(const fs::path &outputPath) {
   size_t count = 0;
   try {
     for (const auto &entry :
-         fs::directory_iterator(output_path / IMG_FOLDERNAME)) {
+         fs::directory_iterator(outputPath / IMG_FOLDERNAME)) {
       if (entry.is_regular_file()) {
         const std::string &filename = entry.path().filename().string();
         if (std::regex_match(filename, PATTERN)) {
@@ -70,14 +70,14 @@ inline std::optional<size_t> CountImages(const fs::path &output_path) {
   }
 }
 
-inline bool validate_dataset(const fs::path &dataset) {
-  const fs::path img_folder = dataset / IMG_FOLDERNAME;
-  const fs::path poses_file = dataset / CSV_FILENAME;
+inline bool validateDataset(const fs::path &dataset) {
+  const fs::path imgFolder = dataset / IMG_FOLDERNAME;
+  const fs::path posesFile = dataset / CSV_FILENAME;
   const rclcpp::Logger &logger = rclcpp::get_logger(HELPER_LOGGERNAME);
   std::initializer_list<bool> conds = {
-      fs::exists(dataset),    fs::is_directory(dataset),
-      fs::exists(img_folder), fs::is_directory(img_folder),
-      fs::exists(poses_file), fs::is_regular_file(poses_file)};
+      fs::exists(dataset),   fs::is_directory(dataset),
+      fs::exists(imgFolder), fs::is_directory(imgFolder),
+      fs::exists(posesFile), fs::is_regular_file(posesFile)};
 
   if (!std::all_of(conds.begin(), conds.end(), [](bool x) { return x; })) {
     RCLCPP_DEBUG(logger,
@@ -86,20 +86,20 @@ inline bool validate_dataset(const fs::path &dataset) {
     return false;
   }
 
-  std::optional<size_t> images_count_opt = CountImages(dataset);
-  std::optional<size_t> poses_count_opt = CountPoses(dataset);
+  std::optional<size_t> imagesCountOpt = countImages(dataset);
+  std::optional<size_t> posesCountOpt = countPoses(dataset);
 
-  if (!images_count_opt) {
+  if (!imagesCountOpt) {
     RCLCPP_DEBUG(logger, "Cannot count images in images/ folder");
     return false;
   }
 
-  if (!poses_count_opt) {
+  if (!posesCountOpt) {
     RCLCPP_DEBUG(logger, "Cannot count poses in poses.csv");
     return false;
   }
 
-  if (*images_count_opt != *poses_count_opt) {
+  if (*posesCountOpt != *posesCountOpt) {
     RCLCPP_DEBUG(logger, "Poses count is not equal to the images count");
     return false;
   }
@@ -111,23 +111,23 @@ enum class PatternOption { ARUCO = 1, CHESSBOARD = 2, CHARUCO = 3 };
 
 struct CalibrationPattern {
   CalibrationPattern(const fs::path &dataset) : dataset_(dataset) {};
-  CalibrationPattern(const fs::path &dataset, const std::string &pattern_info)
+  CalibrationPattern(const fs::path &dataset, const std::string &patternInfo)
       : dataset_(dataset) {
-    setPatternInfo(pattern_info);
+    setPatternInfo(patternInfo);
   }
 
-  void setPatternInfo(const std::string &pattern_info) {
-    std::vector<std::string_view> pattern_params;
-    for (const auto &part : std::views::split(pattern_info, ' ')) {
-      pattern_params.emplace_back(std::string_view(part.data(), part.size()));
+  void setPatternInfo(const std::string &patternInfo) {
+    std::vector<std::string_view> patternParams;
+    for (const auto &part : std::views::split(patternInfo, ' ')) {
+      patternParams.emplace_back(std::string_view(part.data(), part.size()));
     }
-    if (pattern_params.empty()) {
+    if (patternParams.empty()) {
       throw std::runtime_error(
           "Error: you must choose one of the supported patterns: 1, 2 or 3");
     }
 
     std::optional<PatternOption> option = magic_enum::enum_cast<PatternOption>(
-        std::stoi(pattern_params[0].data()));
+        std::stoi(patternParams[0].data()));
 
     if (!option) {
       throw std::runtime_error("Error: choosen pattern is not of the supported "
@@ -138,40 +138,40 @@ struct CalibrationPattern {
 
     switch (option_) {
     case PatternOption::ARUCO: {
-      if (pattern_params.size() < 4) {
+      if (patternParams.size() < 4) {
         throw std::runtime_error(
             "Error: wrong number of params to aruco calibration pattern");
       }
       // TODO: add more checks on that conversions. BTW, an error will be
       // caught, but the .what() won't be user friendly
-      const int32_t dict_num = std::atoi(pattern_params[1].data());
-      id_ = std::atoi(pattern_params[2].data());
-      initializeDict(dict_num, *id_);
-      marker_size_ = std::atof(pattern_params[3].data());
+      const int32_t dictNum = std::atoi(patternParams[1].data());
+      id_ = std::atoi(patternParams[2].data());
+      initializeDict(dictNum, *id_);
+      markerSize_ = std::atof(patternParams[3].data());
       break;
     }
     case PatternOption::CHARUCO: {
-      if (pattern_params.size() < 7) {
+      if (patternParams.size() < 7) {
         throw std::runtime_error(
             "Error: wrong number of params to charuco calibration pattern");
       }
-      rows_ = std::atoi(pattern_params[1].data());
-      cols_ = std::atoi(pattern_params[2].data());
-      cell_size_ = std::atof(pattern_params[3].data());
-      marker_size_ = std::atof(pattern_params[4].data());
-      const int32_t dict_num = std::atoi(pattern_params[5].data());
-      id_ = std::atoi(pattern_params[6].data());
+      rows_ = std::atoi(patternParams[1].data());
+      cols_ = std::atoi(patternParams[2].data());
+      cellSize_ = std::atof(patternParams[3].data());
+      markerSize_ = std::atof(patternParams[4].data());
+      const int32_t dict_num = std::atoi(patternParams[5].data());
+      id_ = std::atoi(patternParams[6].data());
       initializeDict(dict_num, *id_);
       break;
     }
     case PatternOption::CHESSBOARD: {
-      if (pattern_params.size() < 4) {
+      if (patternParams.size() < 4) {
         throw std::runtime_error(
             "Error: wrong number of params to chessboard calibration pattern");
       }
-      rows_ = std::atoi(pattern_params[1].data());
-      cols_ = std::atoi(pattern_params[2].data());
-      cell_size_ = std::atof(pattern_params[3].data());
+      rows_ = std::atoi(patternParams[1].data());
+      cols_ = std::atoi(patternParams[2].data());
+      cellSize_ = std::atof(patternParams[3].data());
       break;
     }
     default: {
@@ -191,9 +191,9 @@ struct CalibrationPattern {
     return cv::Size(*cols_, *rows_);
   }
 
-  std::optional<double> getMarkerSize() const { return marker_size_; }
+  std::optional<double> getMarkerSize() const { return markerSize_; }
 
-  std::optional<double> getCellSize() const { return cell_size_; }
+  std::optional<double> getCellSize() const { return cellSize_; }
 
   std::optional<Dictionary> getDictionary() const { return dict_; }
 
@@ -209,26 +209,26 @@ private:
   // ArUco & ChArUco
   std::optional<cv::aruco::Dictionary> dict_;
   std::optional<int32_t> id_;
-  std::optional<double> marker_size_;
+  std::optional<double> markerSize_;
 
   // Chessboard & ChArUco
   std::optional<int32_t> rows_;
   std::optional<int32_t> cols_;
-  std::optional<double> cell_size_;
+  std::optional<double> cellSize_;
 
-  void initializeDict(const int32_t dict_num, const int32_t id) {
-    if (dict_num < 4 || dict_num > 7) {
+  void initializeDict(const int32_t dictNum, const int32_t id) {
+    if (dictNum < 4 || dictNum > 7) {
       throw std::runtime_error(
           "Error: wrong dictionary number. Choose one from 4-7");
     }
     std::string K = std::to_string(calculateDictK(id));
-    std::string M = std::to_string(dict_num);
-    std::string dict_name("DICT_" + M + "X" + M + "_" + K);
+    std::string M = std::to_string(dictNum);
+    std::string dictName("DICT_" + M + "X" + M + "_" + K);
 
-    std::optional<PredefinedDictionaryType> dict_type =
-        magic_enum::enum_cast<PredefinedDictionaryType>(dict_name);
+    std::optional<PredefinedDictionaryType> dictType =
+        magic_enum::enum_cast<PredefinedDictionaryType>(dictName);
 
-    dict_ = cv::aruco::getPredefinedDictionary(*dict_type);
+    dict_ = cv::aruco::getPredefinedDictionary(*dictType);
   }
 
   int32_t calculateDictK(const int32_t id) const {
@@ -254,17 +254,17 @@ struct CalibrationData {
   cv::Mat D;
 
   // Hand-Eye-Calibration
-  std::vector<cv::Mat> rvecs_target2cam;
-  std::vector<cv::Mat> tvecs_target2cam;
-  std::vector<cv::Mat> rvecs_gripper2base;
-  std::vector<cv::Mat> tvecs_gripper2base;
+  std::vector<cv::Mat> rvecsTarget2Cam;
+  std::vector<cv::Mat> tvecsTarget2Cam;
+  std::vector<cv::Mat> rvecsGripper2Base;
+  std::vector<cv::Mat> tvecsGripper2Base;
 
-  std::unordered_set<size_t> rejected_images;
+  std::unordered_set<size_t> rejectedImages;
 };
 
-inline std::optional<size_t> getImageNumber(const std::string image_name) {
+inline std::optional<size_t> getImageNumber(const std::string imageName) {
   std::smatch matches;
-  if (std::regex_match(image_name, matches, PATTERN)) {
+  if (std::regex_match(imageName, matches, PATTERN)) {
     return std::stoi(matches[1].str());
   }
   return std::nullopt;
@@ -273,7 +273,7 @@ inline std::optional<size_t> getImageNumber(const std::string image_name) {
 // Calibrating camera to get camera's intrinsics parameters and then get the
 // extrinsics. I hope in future, there will no need in camera calibrating, if
 // the intrinsics were already provided.
-inline void FindTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
+inline void findTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
   switch (pattern.getPatternName()) {
   case PatternOption::ARUCO: {
     // TODO: add aruco calibration routine
@@ -306,7 +306,7 @@ inline void FindTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
           objTemplate.emplace_back(c * squareSize, r * squareSize, 0.0f);
     }
 
-    std::unordered_set<size_t> &rejected_images = data.rejected_images;
+    std::unordered_set<size_t> &rejectedImages = data.rejectedImages;
 
     for (const auto &entry :
          fs::directory_iterator(pattern.getDatasetPath() / IMG_FOLDERNAME)) {
@@ -325,7 +325,7 @@ inline void FindTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
       if (!found) {
         RCLCPP_WARN(pattern.getLogger(), "Chessboard not found in %s",
                     entry.path().string().data());
-        rejected_images.insert(*getImageNumber(filename));
+        rejectedImages.insert(*getImageNumber(filename));
         continue;
       }
 
@@ -341,7 +341,7 @@ inline void FindTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
       if (key == 'd') {
         RCLCPP_WARN(pattern.getLogger(), "Image %s is rejected",
                     filename.c_str());
-        rejected_images.insert(*getImageNumber(filename));
+        rejectedImages.insert(*getImageNumber(filename));
         cv::destroyWindow(filename);
         continue;
       }
@@ -358,7 +358,7 @@ inline void FindTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
 
     double rms = cv::calibrateCamera(
         objectPoints, imagePoints, imageSize, data.K, data.D,
-        data.rvecs_target2cam, data.tvecs_target2cam, 0,
+        data.rvecsTarget2Cam, data.tvecsTarget2Cam, 0,
         cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 30,
                          1e-6));
 
@@ -382,14 +382,14 @@ enum class PosesOption {
 };
 
 inline void readPoses(std::vector<std::vector<double>> &poses,
-                      const std::unordered_set<size_t> &skip_indexes,
-                      const fs::path &poses_file) {
-  CSVReader reader = getReader(poses_file);
-  size_t row_ind = 0;
+                      const std::unordered_set<size_t> &skipIndexes,
+                      const fs::path &posesFile) {
+  CSVReader reader = getReader(posesFile);
+  size_t rowInd = 0;
   // Reading poses
   for (auto &pose_row : reader) {
     if (pose_row.size() > 0 && !pose_row[0].is_null() &&
-        !skip_indexes.contains(row_ind++)) {
+        !skipIndexes.contains(rowInd++)) {
       poses.emplace_back();
       std::transform(pose_row.begin(), pose_row.end(),
                      std::back_inserter(poses.back()),
@@ -398,25 +398,25 @@ inline void readPoses(std::vector<std::vector<double>> &poses,
   }
 }
 
-inline void FindGripper2Base(const fs::path &dataset_path,
-                             const int32_t poses_format,
+inline void findGripper2Base(const fs::path &datasetPath,
+                             const int32_t posesFormat,
                              CalibrationData &data) {
 
-  std::optional<PosesOption> poses_option =
-      magic_enum::enum_cast<PosesOption>(poses_format);
+  std::optional<PosesOption> posesOption =
+      magic_enum::enum_cast<PosesOption>(posesFormat);
 
-  if (!poses_option) {
+  if (!posesOption) {
     throw std::runtime_error(
         "Error: provide exising pose format: choose from 1 to 5");
   }
 
   std::vector<std::vector<double>> poses;
-  poses.reserve(*CountPoses(dataset_path));
+  poses.reserve(*countPoses(datasetPath));
 
-  readPoses(poses, data.rejected_images, dataset_path / CSV_FILENAME);
+  readPoses(poses, data.rejectedImages, datasetPath / CSV_FILENAME);
 
-  std::vector<cv::Mat> &rvecs = data.rvecs_gripper2base;
-  std::vector<cv::Mat> &tvecs = data.tvecs_gripper2base;
+  std::vector<cv::Mat> &rvecs = data.rvecsGripper2Base;
+  std::vector<cv::Mat> &tvecs = data.tvecsGripper2Base;
   rvecs.reserve(poses.size());
   tvecs.reserve(poses.size());
 
@@ -425,7 +425,7 @@ inline void FindGripper2Base(const fs::path &dataset_path,
   cv::Mat R_cv(3, 3, CV_64F);
 
   for (const auto &pose : poses) {
-    switch (*poses_option) {
+    switch (*posesOption) {
     case (PosesOption::ROT_XYZW): {
       tvecs.emplace_back(
           std::initializer_list<double>{pose[0], pose[1], pose[2]});

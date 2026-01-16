@@ -95,7 +95,7 @@ int main(int argc, char **argv) {
       ((log_level.find("WARN") != std::string::npos) ? "WARNING" : log_level)));
 
   // Checks dataset existance and its correctness
-  if (!validate_dataset(dataset_path)) {
+  if (!validateDataset(dataset_path)) {
     RCLCPP_ERROR(*logger, "Error: dataset doesn't exist or is corrupted. Set "
                           "debug level for more details.");
     ret(1);
@@ -115,8 +115,8 @@ int main(int argc, char **argv) {
   auto data = std::make_unique<CalibrationData>();
 
   try {
-    FindTarget2Cam(*pattern, *data);
-    FindGripper2Base(dataset_path, poses_format, *data);
+    findTarget2Cam(*pattern, *data);
+    findGripper2Base(dataset_path, poses_format, *data);
   } catch (const std::exception &e) {
     RCLCPP_ERROR(*logger, "%s", e.what());
     ret(1);
@@ -124,29 +124,29 @@ int main(int argc, char **argv) {
 
   if (eye2hand) {
 
-    std::vector<cv::Mat> rvecs_base2gripper;
-    std::vector<cv::Mat> tvecs_base2gripper;
+    std::vector<cv::Mat> rvecsBase2Gripper;
+    std::vector<cv::Mat> tvecsBase2Gripper;
 
-    for (size_t i = 0; i < data->tvecs_gripper2base.size(); ++i) {
-      cv::Mat &rvec = data->rvecs_gripper2base[i];
-      cv::Mat &tvec = data->tvecs_gripper2base[i];
+    for (size_t i = 0; i < data->tvecsGripper2Base.size(); ++i) {
+      cv::Mat &rvec = data->rvecsGripper2Base[i];
+      cv::Mat &tvec = data->tvecsGripper2Base[i];
 
-      cv::Mat rvec_t = rvec.t();
+      cv::Mat rvecT = rvec.t();
 
-      rvecs_base2gripper.emplace_back(rvec_t);
-      tvecs_base2gripper.emplace_back(-rvec_t * tvec);
+      rvecsBase2Gripper.emplace_back(rvecT);
+      tvecsBase2Gripper.emplace_back(-rvecT * tvec);
     }
 
-    data->rvecs_gripper2base = rvecs_base2gripper;
-    data->tvecs_gripper2base = tvecs_base2gripper;
+    data->rvecsGripper2Base = rvecsBase2Gripper;
+    data->tvecsGripper2Base = tvecsBase2Gripper;
   }
 
   cv::Mat R_cam2gripper;
   cv::Mat t_cam2gripper;
 
   try {
-    cv::calibrateHandEye(data->rvecs_gripper2base, data->tvecs_gripper2base,
-                         data->rvecs_target2cam, data->tvecs_target2cam,
+    cv::calibrateHandEye(data->rvecsGripper2Base, data->tvecsGripper2Base,
+                         data->rvecsTarget2Cam, data->tvecsTarget2Cam,
                          R_cam2gripper, t_cam2gripper);
 
     RCLCPP_INFO(*logger, "Calibration completed!");
