@@ -52,6 +52,8 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(csv)
 FetchContent_MakeAvailable(magic_enum)
 
+add_definitions(-DOPENCV_DISABLE_EIGEN_TENSOR_SUPPORT)
+
 add_executable(dataset_collector src/collect_dataset.cpp)
 ament_target_dependencies(dataset_collector
     rclcpp

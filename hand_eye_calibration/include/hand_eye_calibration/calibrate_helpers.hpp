@@ -5,6 +5,7 @@
 #include <eigen3/Eigen/Eigen>
 #include <filesystem>
 #include <opencv2/calib3d.hpp>
+#include <opencv2/core/eigen.hpp>
 #include <opencv2/opencv.hpp>
 #include <ranges>
 #include <rclcpp/rclcpp.hpp>
