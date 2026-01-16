@@ -37,7 +37,7 @@ void ret(int32_t code) {
   exit(code);
 }
 
-void signalHandler([[maybe_unused]] int signal) {
+void signalHandler([[maybe_unused]] int32_t signal) {
   std::cout << "\nSIGINT (Ctrl+C) received. Shutting down gracefully..."
             << std::endl;
   ret(0);
@@ -60,7 +60,7 @@ void SaveImageToFolder(cv::Mat &image) {
   RCLCPP_DEBUG(*logger, "Image saved!");
 }
 
-int main(int argc, const char **argv) {
+int32_t main(int32_t argc, const char **argv) {
   signal(SIGINT, signalHandler);
   rclcpp::init(argc, argv);
 
@@ -106,12 +106,12 @@ int main(int argc, const char **argv) {
 
   logger->set_level(level.value());
   rcutils_ret_t res = rcutils_logging_set_logger_level(
-      DUMPER_LOGGERNAME, static_cast<int>(*level));
+      DUMPER_LOGGERNAME, static_cast<int32_t>(*level));
   if (RCUTILS_RET_OK != res) {
     RCLCPP_WARN(*logger, "Error: unable to set desired logging level");
   }
   res = rcutils_logging_set_logger_level(HELPER_LOGGERNAME,
-                                         static_cast<int>(*level));
+                                         static_cast<int32_t>(*level));
   if (RCUTILS_RET_OK != res) {
     RCLCPP_WARN(*logger, "Error: unable to set desired logging level");
   }

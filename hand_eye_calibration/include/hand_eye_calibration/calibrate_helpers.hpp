@@ -292,7 +292,7 @@ inline void findTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
 
     cv::Size imageSize;
 
-    int flags = cv::CALIB_CB_NORMALIZE_IMAGE | cv::CALIB_CB_EXHAUSTIVE |
+    int32_t flags = cv::CALIB_CB_NORMALIZE_IMAGE | cv::CALIB_CB_EXHAUSTIVE |
                 cv::CALIB_CB_ACCURACY;
 
     cv::Size boardSize = *pattern.getChessboardDims();
@@ -301,8 +301,8 @@ inline void findTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
     static std::vector<cv::Point3f> objTemplate;
     if (objTemplate.empty()) {
       objTemplate.reserve(boardSize.area());
-      for (int r = 0; r < boardSize.height; ++r)
-        for (int c = 0; c < boardSize.width; ++c)
+      for (int32_t r = 0; r < boardSize.height; ++r)
+        for (int32_t c = 0; c < boardSize.width; ++c)
           objTemplate.emplace_back(c * squareSize, r * squareSize, 0.0f);
     }
 
@@ -440,8 +440,8 @@ inline void findGripper2Base(const fs::path &datasetPath,
       q.normalize();
       R_eigen = std::move(q).toRotationMatrix();
 
-      for (int i = 0; i < 3; ++i) {
-        for (int j = 0; j < 3; ++j) {
+      for (int32_t i = 0; i < 3; ++i) {
+        for (int32_t j = 0; j < 3; ++j) {
           R_cv.at<double>(i, j) = R_eigen(i, j);
         }
       }
@@ -463,8 +463,8 @@ inline void findGripper2Base(const fs::path &datasetPath,
       q.normalize();
       R_eigen = std::move(q).toRotationMatrix();
 
-      for (int i = 0; i < 3; ++i) {
-        for (int j = 0; j < 3; ++j) {
+      for (int32_t i = 0; i < 3; ++i) {
+        for (int32_t j = 0; j < 3; ++j) {
           R_cv.at<double>(i, j) = R_eigen(i, j);
         }
       }
@@ -484,7 +484,7 @@ inline void findGripper2Base(const fs::path &datasetPath,
       tf2::Matrix3x3 R_tf2;
       R_tf2.setEulerYPR(yaw, pitch, roll);
 
-      for (int i = 0; i < R_cv.rows; ++i) {
+      for (int32_t i = 0; i < R_cv.rows; ++i) {
         const tf2::Vector3 &row = R_tf2.getRow(i);
         R_cv.at<cv::Vec3d>(i)[0] = row[0];
         R_cv.at<cv::Vec3d>(i)[1] = row[1];
@@ -507,7 +507,7 @@ inline void findGripper2Base(const fs::path &datasetPath,
       tf2::Matrix3x3 R_tf2;
       R_tf2.setEulerYPR(yaw, pitch, roll);
 
-      for (int i = 0; i < R_cv.rows; ++i) {
+      for (int32_t i = 0; i < R_cv.rows; ++i) {
         const tf2::Vector3 &row = R_tf2.getRow(i);
         R_cv.at<cv::Vec3d>(i)[0] = row[0];
         R_cv.at<cv::Vec3d>(i)[1] = row[1];

@@ -72,11 +72,11 @@ inline void dumpValue(const std::wstring &val, std::vector<std::string> &dump) {
 }
 
 inline void dumpValue(const uint8_t &val, std::vector<std::string> &dump) {
-  dump.emplace_back(std::to_string(static_cast<int>(val)));
+  dump.emplace_back(std::to_string(static_cast<int32_t>(val)));
 }
 
 inline void dumpValue(const char16_t &val, std::vector<std::string> &dump) {
-  dump.emplace_back(std::to_string(static_cast<int>(val)));
+  dump.emplace_back(std::to_string(static_cast<int32_t>(val)));
 }
 
 inline void dumpValue(const char *val, std::vector<std::string> &dump) {
@@ -211,7 +211,7 @@ inline void dumpMessageContent(const ros_babel_fish::Message &message,
       break;
     case MessageTypes::UInt8:
       RCLCPP_DEBUG(rclcpp::get_logger("dumper"), "Dumping uint8");
-      dump.emplace_back(std::to_string(static_cast<unsigned int>(
+      dump.emplace_back(std::to_string(static_cast<uint32_t>(
           message.as<ValueMessage<uint8_t>>().getValue())));
       break;
     case MessageTypes::UInt16:

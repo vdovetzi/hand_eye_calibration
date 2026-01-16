@@ -22,7 +22,7 @@ void ret(int32_t code) {
 
 // TODO: add opportunity to provide intrinsics in cli and thus not to find them
 // TODO: add YPR order for rotation
-int main(int argc, char **argv) {
+int32_t main(int32_t argc, char **argv) {
   rclcpp::init(argc, argv);
 
   node = rclcpp::Node::make_shared("dataset_collector");
@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
   // Setting ROS log-level
   logger->set_level(*level);
   rcutils_ret_t res = rcutils_logging_set_logger_level(
-      HELPER_LOGGERNAME, static_cast<int>(*level));
+      HELPER_LOGGERNAME, static_cast<int32_t>(*level));
   if (RCUTILS_RET_OK != res) {
     RCLCPP_WARN(*logger, "Error: unable to set desired logging level");
   }
