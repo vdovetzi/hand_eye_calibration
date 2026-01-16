@@ -312,6 +312,8 @@ inline void FindTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
          fs::directory_iterator(pattern.getDatasetPath() / IMG_FOLDERNAME)) {
       cv::imread(entry.path().string(), image);
 
+      std::string filename = entry.path().filename();
+
       if (imageSize.empty()) {
         imageSize = image.size();
       }
@@ -323,7 +325,7 @@ inline void FindTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
       if (!found) {
         RCLCPP_WARN(pattern.getLogger(), "Chessboard not found in %s",
                     entry.path().string().data());
-        rejected_images.insert(*getImageNumber(entry.path().filename()));
+        rejected_images.insert(*getImageNumber(filename));
         continue;
       }
 
@@ -332,13 +334,23 @@ inline void FindTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
           cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 30,
                            0.001));
 
+      cv::drawChessboardCorners(image, *pattern.getChessboardDims(), corners,
+                                found);
+      cv::imshow(filename, image);
+      int32_t key = cv::waitKey(0);
+      if (key == 'd') {
+        RCLCPP_WARN(pattern.getLogger(), "Image %s is rejected",
+                    filename.c_str());
+        rejected_images.insert(*getImageNumber(filename));
+        cv::destroyWindow(filename);
+        continue;
+      }
+
+      cv::destroyWindow(filename);
+
       imagePoints.emplace_back(corners);
       objectPoints.emplace_back(objTemplate);
-
-      // cv::drawChessboardCorners(image, *pattern.getChessboardDims(), corners,
-      // found); cv::imshow("Detected Corners", image); cv::waitKey(0);
     }
-    // cv::destroyAllWindows();
 
     if (imagePoints.size() < 3) {
       throw std::runtime_error("Error: need more images. Need at least 3");
