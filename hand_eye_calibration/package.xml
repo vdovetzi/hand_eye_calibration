@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>hand_eye_calibration</name>
-  <version>0.0.1</version>
+  <version>1.0.0</version>
   <description>Minimal ROS 2 package for hand–eye calibration using OpenCV.</description>
   <maintainer email="ilya.vdovets@gmail.com">vdovetzi</maintainer>
   <license>Apache-2.0</license>
