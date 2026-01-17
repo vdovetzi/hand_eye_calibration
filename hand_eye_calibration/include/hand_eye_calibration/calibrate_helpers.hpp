@@ -255,10 +255,10 @@ struct CalibrationData {
   cv::Mat D;
 
   // Hand-Eye-Calibration
-  std::vector<cv::Mat> rvecsTarget2Cam;
-  std::vector<cv::Mat> tvecsTarget2Cam;
-  std::vector<cv::Mat> rvecsGripper2Base;
-  std::vector<cv::Mat> tvecsGripper2Base;
+  std::vector<cv::Mat> R_target2cam;
+  std::vector<cv::Mat> t_target2cam;
+  std::vector<cv::Mat> R_gripper2base;
+  std::vector<cv::Mat> t_gripper2base;
 
   std::unordered_set<size_t> rejectedImages;
 };
@@ -288,16 +288,15 @@ inline void findTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
     std::vector<std::vector<cv::Point2f>> imagePoints;
     std::vector<std::vector<cv::Point3f>> objectPoints;
     std::vector<cv::Point2f> corners;
-    cv::Mat gray;
     cv::Mat image;
-
+    cv::Mat gray;
     cv::Size imageSize;
 
-    int32_t flags = cv::CALIB_CB_NORMALIZE_IMAGE | cv::CALIB_CB_EXHAUSTIVE |
-                cv::CALIB_CB_ACCURACY;
+    const int32_t flags = cv::CALIB_CB_NORMALIZE_IMAGE |
+                          cv::CALIB_CB_EXHAUSTIVE | cv::CALIB_CB_ACCURACY;
 
-    cv::Size boardSize = *pattern.getChessboardDims();
-    double squareSize = *pattern.getCellSize();
+    const cv::Size boardSize = *pattern.getChessboardDims();
+    const double squareSize = *pattern.getCellSize();
 
     static std::vector<cv::Point3f> objTemplate;
     if (objTemplate.empty()) {
@@ -309,11 +308,15 @@ inline void findTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
 
     std::unordered_set<size_t> &rejectedImages = data.rejectedImages;
 
-    for (const auto &entry :
-         fs::directory_iterator(pattern.getDatasetPath() / IMG_FOLDERNAME)) {
-      cv::imread(entry.path().string(), image);
+    const size_t imageNum = *countImages(pattern.getDatasetPath());
+    const fs::path &datasetPath = pattern.getDatasetPath();
+    const cv::Size patternDims = *pattern.getChessboardDims();
 
-      std::string filename = entry.path().filename();
+    imagePoints.reserve(imageNum);
+
+    for (size_t i = 0; i < imageNum; ++i) {
+      const std::string filename = std::to_string(i) + ".png";
+      cv::imread(datasetPath / IMG_FOLDERNAME / filename, image);
 
       if (imageSize.empty()) {
         imageSize = image.size();
@@ -321,12 +324,12 @@ inline void findTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
 
       cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
 
-      bool found = cv::findChessboardCornersSB(
-          gray, *pattern.getChessboardDims(), corners, flags);
+      const bool found =
+          cv::findChessboardCornersSB(gray, patternDims, corners, flags);
       if (!found) {
         RCLCPP_WARN(pattern.getLogger(), "Chessboard not found in %s",
-                    entry.path().string().data());
-        rejectedImages.insert(*getImageNumber(filename));
+                    filename.c_str());
+        rejectedImages.insert(i);
         continue;
       }
 
@@ -335,14 +338,13 @@ inline void findTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
           cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 30,
                            0.001));
 
-      cv::drawChessboardCorners(image, *pattern.getChessboardDims(), corners,
-                                found);
+      cv::drawChessboardCorners(image, patternDims, corners, found);
       cv::imshow(filename, image);
       int32_t key = cv::waitKey(0);
       if (key == 'd') {
         RCLCPP_WARN(pattern.getLogger(), "Image %s is rejected",
                     filename.c_str());
-        rejectedImages.insert(*getImageNumber(filename));
+        rejectedImages.insert(i);
         cv::destroyWindow(filename);
         continue;
       }
@@ -353,15 +355,27 @@ inline void findTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
       objectPoints.emplace_back(objTemplate);
     }
 
+    cv::destroyAllWindows();
+
     if (imagePoints.size() < 3) {
       throw std::runtime_error("Error: need more images. Need at least 3");
     }
 
-    double rms = cv::calibrateCamera(
-        objectPoints, imagePoints, imageSize, data.K, data.D,
-        data.rvecsTarget2Cam, data.tvecsTarget2Cam, 0,
+    std::vector<cv::Mat> rvecs;
+
+    const double rms = cv::calibrateCamera(
+        objectPoints, imagePoints, imageSize, data.K, data.D, rvecs,
+        data.t_target2cam, 0,
         cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 30,
                          1e-6));
+
+    std::vector<cv::Mat> &Rs = data.R_target2cam;
+    Rs.reserve(rvecs.size());
+    for (const cv::Mat &rvec : rvecs) {
+      cv::Mat R;
+      cv::Rodrigues(rvec, R);
+      Rs.emplace_back(R);
+    }
 
     RCLCPP_DEBUG(pattern.getLogger(),
                  "Camera calibration successfull! Reprojection error is %f",
@@ -400,8 +414,7 @@ inline void readPoses(std::vector<std::vector<double>> &poses,
 }
 
 inline void findGripper2Base(const fs::path &datasetPath,
-                             const int32_t posesFormat,
-                             CalibrationData &data) {
+                             const int32_t posesFormat, CalibrationData &data) {
 
   std::optional<PosesOption> posesOption =
       magic_enum::enum_cast<PosesOption>(posesFormat);
@@ -416,14 +429,13 @@ inline void findGripper2Base(const fs::path &datasetPath,
 
   readPoses(poses, data.rejectedImages, datasetPath / CSV_FILENAME);
 
-  std::vector<cv::Mat> &rvecs = data.rvecsGripper2Base;
-  std::vector<cv::Mat> &tvecs = data.tvecsGripper2Base;
-  rvecs.reserve(poses.size());
+  std::vector<cv::Mat> &Rs = data.R_gripper2base;
+  std::vector<cv::Mat> &tvecs = data.t_gripper2base;
+  Rs.reserve(poses.size());
   tvecs.reserve(poses.size());
 
   Eigen::Matrix3d R_eigen;
   cv::Mat rvec;
-  cv::Mat R_cv(3, 3, CV_64F);
 
   for (const auto &pose : poses) {
     switch (*posesOption) {
@@ -438,17 +450,12 @@ inline void findGripper2Base(const fs::path &datasetPath,
       q.z() = pose[5];
       q.w() = pose[6];
 
-      q.normalize();
-      R_eigen = std::move(q).toRotationMatrix();
+      R_eigen = q.normalized().toRotationMatrix();
 
-      for (int32_t i = 0; i < 3; ++i) {
-        for (int32_t j = 0; j < 3; ++j) {
-          R_cv.at<double>(i, j) = R_eigen(i, j);
-        }
-      }
+      cv::Mat R_cv;
+      cv::eigen2cv(R_eigen, R_cv);
 
-      cv::Rodrigues(R_cv, rvec);
-      rvecs.emplace_back(rvec);
+      Rs.emplace_back(R_cv);
       break;
     }
     case (PosesOption::ROT_WXYZ): {
@@ -461,17 +468,12 @@ inline void findGripper2Base(const fs::path &datasetPath,
       q.y() = pose[5];
       q.z() = pose[6];
 
-      q.normalize();
-      R_eigen = std::move(q).toRotationMatrix();
+      R_eigen = q.normalized().toRotationMatrix();
 
-      for (int32_t i = 0; i < 3; ++i) {
-        for (int32_t j = 0; j < 3; ++j) {
-          R_cv.at<double>(i, j) = R_eigen(i, j);
-        }
-      }
+      cv::Mat R_cv;
+      cv::eigen2cv(R_eigen, R_cv);
 
-      cv::Rodrigues(R_cv, rvec);
-      rvecs.emplace_back(rvec);
+      Rs.emplace_back(R_cv);
       break;
     }
     case (PosesOption::ROT_RPY_RAD): {
@@ -484,6 +486,7 @@ inline void findGripper2Base(const fs::path &datasetPath,
 
       tf2::Matrix3x3 R_tf2;
       R_tf2.setEulerYPR(yaw, pitch, roll);
+      cv::Mat R_cv;
 
       for (int32_t i = 0; i < R_cv.rows; ++i) {
         const tf2::Vector3 &row = R_tf2.getRow(i);
@@ -492,8 +495,7 @@ inline void findGripper2Base(const fs::path &datasetPath,
         R_cv.at<cv::Vec3d>(i)[2] = row[2];
       }
 
-      cv::Rodrigues(R_cv, rvec);
-      rvecs.emplace_back(rvec);
+      Rs.emplace_back(R_cv);
 
       break;
     }
@@ -507,6 +509,7 @@ inline void findGripper2Base(const fs::path &datasetPath,
 
       tf2::Matrix3x3 R_tf2;
       R_tf2.setEulerYPR(yaw, pitch, roll);
+      cv::Mat R_cv;
 
       for (int32_t i = 0; i < R_cv.rows; ++i) {
         const tf2::Vector3 &row = R_tf2.getRow(i);
@@ -515,8 +518,7 @@ inline void findGripper2Base(const fs::path &datasetPath,
         R_cv.at<cv::Vec3d>(i)[2] = row[2];
       }
 
-      cv::Rodrigues(R_cv, rvec);
-      rvecs.emplace_back(rvec);
+      Rs.emplace_back(R_cv);
 
       break;
     }

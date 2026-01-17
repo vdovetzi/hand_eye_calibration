@@ -122,31 +122,33 @@ int32_t main(int32_t argc, char **argv) {
   }
 
   if (eye2hand) {
+    std::vector<cv::Mat> R_base2gripper;
+    std::vector<cv::Mat> t_base2gripper;
+    const size_t count = data->R_gripper2base.size();
+    R_base2gripper.reserve(count);
+    t_base2gripper.reserve(count);
 
-    std::vector<cv::Mat> rvecsBase2Gripper;
-    std::vector<cv::Mat> tvecsBase2Gripper;
+    for (size_t i = 0; i < data->t_gripper2base.size(); ++i) {
+      cv::Mat &R = data->R_gripper2base[i];
+      cv::Mat &t = data->t_gripper2base[i];
 
-    for (size_t i = 0; i < data->tvecsGripper2Base.size(); ++i) {
-      cv::Mat &rvec = data->rvecsGripper2Base[i];
-      cv::Mat &tvec = data->tvecsGripper2Base[i];
+      cv::Mat R_T = R.t();
 
-      cv::Mat rvecT = rvec.t();
-
-      rvecsBase2Gripper.emplace_back(rvecT);
-      tvecsBase2Gripper.emplace_back(-rvecT * tvec);
+      R_base2gripper.emplace_back(R_T);
+      t_base2gripper.emplace_back(-R_T * t);
     }
 
-    data->rvecsGripper2Base = rvecsBase2Gripper;
-    data->tvecsGripper2Base = tvecsBase2Gripper;
+    data->R_gripper2base = R_base2gripper;
+    data->t_gripper2base = t_base2gripper;
   }
 
   cv::Mat R_cam2gripper;
   cv::Mat t_cam2gripper;
 
   try {
-    cv::calibrateHandEye(data->rvecsGripper2Base, data->tvecsGripper2Base,
-                         data->rvecsTarget2Cam, data->tvecsTarget2Cam,
-                         R_cam2gripper, t_cam2gripper);
+    cv::calibrateHandEye(data->R_gripper2base, data->t_gripper2base,
+                         data->R_target2cam, data->t_target2cam, R_cam2gripper,
+                         t_cam2gripper);
 
     RCLCPP_INFO(*logger, "Calibration completed!");
   } catch (const std::exception &e) {
