@@ -31,7 +31,7 @@ int32_t main(int32_t argc, char **argv) {
   signal(SIGINT, signalHandler);
   rclcpp::init(argc, argv);
 
-  node = rclcpp::Node::make_shared("dataset_collector");
+  node = rclcpp::Node::make_shared("calibrator");
   logger = std::make_shared<rclcpp::Logger>(node->get_logger());
 
   po::options_description desc("Allowed options");
