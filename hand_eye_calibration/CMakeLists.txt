@@ -16,9 +16,17 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_link_options(--coverage)
 endif()
 
+option(USE_SANITIZERS "Whether or not using sanitizers" OFF)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/externals/sanitizers-cmake/cmake" ${CMAKE_MODULE_PATH})
+
+set(SANITIZE_ADDRESS ON)
+set(SANITIZE_MEMORY OFF)
+set(SANITIZE_UNDEFINED ON)
+set(SANITIZE_THREAD OFF)
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
@@ -31,9 +39,10 @@ find_package(console_bridge_vendor REQUIRED) # Provides console_bridge 0.4.0 on 
 find_package(console_bridge REQUIRED)
 find_package(tf2 REQUIRED)
 
-
 find_package(OpenCV REQUIRED)
 find_package(Boost 1.65 REQUIRED COMPONENTS program_options)
+
+find_package(Sanitizers)
 
 FetchContent_Declare(
   csv  
@@ -74,6 +83,11 @@ ament_target_dependencies(calibrator
 )
 target_include_directories(calibrator PRIVATE ${OpenCV_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} include/)
 target_link_libraries(calibrator ${OpenCV_LIBS} ${Boost_LIBRARIES} csv magic_enum console_bridge::console_bridge)
+
+if(USE_SANITIZERS)
+  add_sanitizers(dataset_collector)
+  add_sanitizers(calibrator)
+endif()
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
