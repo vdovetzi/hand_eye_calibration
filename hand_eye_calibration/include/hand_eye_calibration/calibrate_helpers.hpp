@@ -315,7 +315,7 @@ inline void findTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
     imagePoints.reserve(imageNum);
 
     for (size_t i = 0; i < imageNum; ++i) {
-      const std::string filename = std::to_string(i) + ".png";
+      const std::string filename = std::format("{}.png", i);
       cv::imread(datasetPath / IMG_FOLDERNAME / filename, image);
 
       if (imageSize.empty()) {
