@@ -274,6 +274,7 @@ inline std::optional<size_t> getImageNumber(const std::string &imageName) {
 // extrinsics. I hope in future, there will no need in camera calibrating, if
 // the intrinsics were already provided.
 inline void findTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
+  const rclcpp::Logger &logger = pattern.getLogger();
   switch (pattern.getPatternName()) {
   case PatternOption::ARUCO: {
     // TODO: add aruco calibration routine
@@ -313,6 +314,10 @@ inline void findTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
 
     imagePoints.reserve(imageNum);
 
+    RCLCPP_INFO(logger,
+                "Press any key to go to the next image. Press 'd' to reject "
+                "the image");
+
     for (size_t i = 0; i < imageNum; ++i) {
       const std::string filename = std::format("{}.png", i);
       cv::imread(datasetPath / IMG_FOLDERNAME / filename, image);
@@ -326,8 +331,7 @@ inline void findTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
       const bool found =
           cv::findChessboardCornersSB(gray, patternDims, corners, flags);
       if (!found) {
-        RCLCPP_WARN(pattern.getLogger(), "Chessboard not found in %s",
-                    filename.c_str());
+        RCLCPP_WARN(logger, "Chessboard not found in %s", filename.c_str());
         rejectedImages.insert(i);
         continue;
       }
@@ -341,8 +345,7 @@ inline void findTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
       cv::imshow(filename, image);
       int32_t key = cv::waitKey(0);
       if (key == 'd') {
-        RCLCPP_WARN(pattern.getLogger(), "Image %s is rejected",
-                    filename.c_str());
+        RCLCPP_WARN(logger, "Image %s is rejected", filename.c_str());
         rejectedImages.insert(i);
         cv::destroyWindow(filename);
         continue;
@@ -362,6 +365,10 @@ inline void findTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
 
     std::vector<cv::Mat> rvecs;
 
+    std::cout << std::format(
+        "Calibrating camera with {} valid images. It may take some time...\n",
+        imagePoints.size());
+
     const double rms = cv::calibrateCamera(
         objectPoints, imagePoints, imageSize, data.K, data.D, rvecs,
         data.t_target2cam, 0,
@@ -376,7 +383,7 @@ inline void findTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
       Rs.emplace_back(R);
     }
 
-    RCLCPP_DEBUG(pattern.getLogger(),
+    RCLCPP_DEBUG(logger,
                  "Camera calibration successfull! Reprojection error is %f",
                  rms);
     break;
