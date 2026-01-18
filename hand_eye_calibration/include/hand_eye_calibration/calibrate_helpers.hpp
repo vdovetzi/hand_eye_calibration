@@ -263,7 +263,7 @@ struct CalibrationData {
   std::unordered_set<size_t> rejectedImages;
 };
 
-inline std::optional<size_t> getImageNumber(const std::string imageName) {
+inline std::optional<size_t> getImageNumber(const std::string& imageName) {
   std::smatch matches;
   if (std::regex_match(imageName, matches, PATTERN)) {
     return std::stoi(matches[1].str());
