@@ -80,7 +80,7 @@ inline bool validateDataset(const fs::path &dataset) {
       fs::exists(imgFolder), fs::is_directory(imgFolder),
       fs::exists(posesFile), fs::is_regular_file(posesFile)};
 
-  if (!std::all_of(conds.begin(), conds.end(), [](bool x) { return x; })) {
+  if (!std::ranges::all_of(conds, [](bool x) { return x; })) {
     RCLCPP_DEBUG(logger,
                  "Check existance of the following files and "
                  "directories:\ndataset/\ndataset/images/\ndataset/poses.csv");
@@ -263,7 +263,7 @@ struct CalibrationData {
   std::unordered_set<size_t> rejectedImages;
 };
 
-inline std::optional<size_t> getImageNumber(const std::string& imageName) {
+inline std::optional<size_t> getImageNumber(const std::string &imageName) {
   std::smatch matches;
   if (std::regex_match(imageName, matches, PATTERN)) {
     return std::stoi(matches[1].str());
