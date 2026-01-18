@@ -264,8 +264,7 @@ struct CalibrationData {
 };
 
 inline std::optional<size_t> getImageNumber(const std::string &imageName) {
-  std::smatch matches;
-  if (std::regex_match(imageName, matches, PATTERN)) {
+  if (std::smatch matches; std::regex_match(imageName, matches, PATTERN)) {
     return std::stoi(matches[1].str());
   }
   return std::nullopt;
