@@ -63,7 +63,9 @@ FetchContent_MakeAvailable(magic_enum)
 
 add_definitions(-DOPENCV_DISABLE_EIGEN_TENSOR_SUPPORT)
 
-add_executable(dataset_collector src/collect_dataset.cpp)
+add_executable(dataset_collector
+  src/collect_dataset.cpp
+)
 ament_target_dependencies(dataset_collector
     rclcpp
     image_transport
@@ -71,18 +73,40 @@ ament_target_dependencies(dataset_collector
     sensor_msgs
     ros_babel_fish
 )
-target_include_directories(dataset_collector PRIVATE ${OpenCV_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} include/)
-target_link_libraries(dataset_collector ${OpenCV_LIBS} ${Boost_LIBRARIES} csv magic_enum console_bridge::console_bridge)
+target_include_directories(dataset_collector PRIVATE
+  ${OpenCV_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
+  include
+)
+target_link_libraries(dataset_collector
+  ${OpenCV_LIBS}
+  ${Boost_LIBRARIES}
+  csv
+  magic_enum
+  console_bridge::console_bridge
+)
 
-add_executable(calibrator src/calibrate.cpp)
+add_executable(calibrator
+  src/calibrate.cpp
+)
 ament_target_dependencies(calibrator
     rclcpp
     geometry_msgs
     sensor_msgs
     tf2
 )
-target_include_directories(calibrator PRIVATE ${OpenCV_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} include/)
-target_link_libraries(calibrator ${OpenCV_LIBS} ${Boost_LIBRARIES} csv magic_enum console_bridge::console_bridge)
+target_include_directories(calibrator PRIVATE
+  ${OpenCV_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
+  include
+)
+target_link_libraries(calibrator
+  ${OpenCV_LIBS}
+  ${Boost_LIBRARIES}
+  csv
+  magic_enum
+  console_bridge::console_bridge
+)
 
 if(USE_SANITIZERS)
   add_sanitizers(dataset_collector)
