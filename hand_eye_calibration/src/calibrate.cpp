@@ -73,11 +73,11 @@ int32_t main(int32_t argc, char **argv) {
   const std::string calibration_pattern =
       vm["calibration-pattern"].as<std::string>();
   const int32_t poses_format = vm["poses-format"].as<int32_t>();
-  std::string log_level = vm["log-level"].as<std::string>();
+  const std::string logLevel = vm["log-level"].as<std::string>();
   const bool eye2hand = vm["eye-to-hand"].as<bool>();
 
   // Setting logger level;
-  std::optional<Level> level = magic_enum::enum_cast<Level>(log_level);
+  std::optional<Level> level = magic_enum::enum_cast<Level>(logLevel);
 
   if (!level) {
     RCLCPP_ERROR(*logger, "Error: there is no such logger level");
