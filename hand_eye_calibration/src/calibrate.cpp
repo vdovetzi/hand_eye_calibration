@@ -150,7 +150,11 @@ int32_t main(int32_t argc, char **argv) {
                          data->R_target2cam, data->t_target2cam, R_cam2gripper,
                          t_cam2gripper);
 
-    RCLCPP_INFO(*logger, "Calibration completed!");
+    // Combining into homogeneous transformation matrix and dump to yaml
+    dumpToYAML(R_cam2gripper, t_cam2gripper);
+
+    RCLCPP_INFO(*logger, "Calibration completed! Saved to %s",
+                CALIBRATION_FILENAME);
   } catch (const std::exception &e) {
     RCLCPP_ERROR(*logger, "%s", e.what());
     ret(1);

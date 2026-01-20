@@ -22,6 +22,7 @@ constexpr const char *CSV_FILENAME = "poses.csv";
 constexpr const char *IMG_FOLDERNAME = "images";
 constexpr const char *HELPER_LOGGERNAME = "helper";
 constexpr const char *DATASET_FOLDERNAME = "dataset";
+constexpr const char *CALIBRATION_FILENAME = "calibration.yaml";
 constexpr const double DEG2RAD = std::numbers::pi / 180.0;
 const std::regex PATTERN(R"(^(\d+)\.png$)");
 
@@ -533,4 +534,14 @@ inline void findGripper2Base(const fs::path &datasetPath,
     }
     }
   }
+}
+
+inline void dumpToYAML(const cv::Mat &R, const cv::Mat &t) {
+  cv::Mat T(4, 4, CV_64F);
+  R.copyTo(T(cv::Rect(0, 0, 3, 3)));
+  t.copyTo(T(cv::Rect(3, 0, 1, 3)));
+
+  cv::FileStorage out(CALIBRATION_FILENAME, cv::FileStorage::WRITE);
+  out << "Transformation Matrix" << T;
+  out.release();
 }
