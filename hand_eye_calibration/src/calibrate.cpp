@@ -68,11 +68,11 @@ int32_t main(int32_t argc, char **argv) {
   }
 
   // Getting parsed input
-  const fs::path dataset_path =
+  const fs::path datasetPath =
       fs::path(vm["dataset-path"].as<std::string>()) / DATASET_FOLDERNAME;
-  const std::string calibration_pattern =
+  const std::string calibrationPattern =
       vm["calibration-pattern"].as<std::string>();
-  const int32_t poses_format = vm["poses-format"].as<int32_t>();
+  const int32_t posesFormat = vm["poses-format"].as<int32_t>();
   const std::string logLevel = vm["log-level"].as<std::string>();
   const bool eye2hand = vm["eye-to-hand"].as<bool>();
 
@@ -94,17 +94,17 @@ int32_t main(int32_t argc, char **argv) {
   console_bridge::setLogLevel(console_bridge::CONSOLE_BRIDGE_LOG_ERROR);
 
   // Checks dataset existance and its correctness
-  if (!validateDataset(dataset_path)) {
+  if (!validateDataset(datasetPath)) {
     RCLCPP_ERROR(*logger, "Error: dataset doesn't exist or is corrupted. Set "
                           "debug level for more details.");
     ret(1);
   }
 
-  auto pattern = std::make_unique<CalibrationPattern>(dataset_path);
+  auto pattern = std::make_unique<CalibrationPattern>(datasetPath);
 
   // Getting stuff for calibration based on the choosen pattern
   try {
-    pattern->setPatternInfo(calibration_pattern);
+    pattern->setPatternInfo(calibrationPattern);
   } catch (const std::exception &e) {
     RCLCPP_ERROR(*logger, "%s", e.what());
     ret(1);
@@ -115,7 +115,7 @@ int32_t main(int32_t argc, char **argv) {
 
   try {
     findTarget2Cam(*pattern, *data);
-    findGripper2Base(dataset_path, poses_format, *data);
+    findGripper2Base(datasetPath, posesFormat, *data);
   } catch (const std::exception &e) {
     RCLCPP_ERROR(*logger, "%s", e.what());
     ret(1);
