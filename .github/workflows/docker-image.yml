@@ -1,0 +1,18 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "jazzy" ]
+  pull_request:
+    branches: [ "jazzy" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-laptop
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Package build
+      run: docker build . --file Dockerfile --tag build:$(date +%s)
