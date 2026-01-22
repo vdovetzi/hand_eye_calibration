@@ -4,9 +4,9 @@
 #include <csv.hpp>
 #include <eigen3/Eigen/Eigen>
 #include <filesystem>
+#include <opencv2/aruco.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core/eigen.hpp>
-#include <opencv2/aruco.hpp>
 #include <opencv2/opencv.hpp>
 #include <ranges>
 #include <rclcpp/rclcpp.hpp>
@@ -16,7 +16,11 @@
 using csv::CSVFormat;
 using csv::CSVReader;
 using cv::aruco::Dictionary;
-using cv::aruco::PredefinedDictionaryType;
+#if CV_VERSION_MAJOR == 4 && CV_VERSION_MINOR <= 6
+using DictionaryEnumType = cv::aruco::PREDEFINED_DICTIONARY_NAME;
+#else
+using DictionaryEnumType = cv::aruco::PredefinedDictionaryType;
+#endif
 namespace fs = std::filesystem;
 
 constexpr const char *CSV_FILENAME = "poses.csv";
@@ -113,7 +117,11 @@ inline bool validateDataset(const fs::path &dataset) {
 enum class PatternOption { ARUCO = 1, CHESSBOARD = 2, CHARUCO = 3 };
 
 struct CalibrationPattern {
-  CalibrationPattern(const fs::path &dataset) : dataset_(dataset) {};
+  CalibrationPattern() {}
+  CalibrationPattern(const std::string &patternInfo) {
+    setPatternInfo(patternInfo);
+  }
+  CalibrationPattern(const fs::path &dataset) : dataset_(dataset) {}
   CalibrationPattern(const fs::path &dataset, const std::string &patternInfo)
       : dataset_(dataset) {
     setPatternInfo(patternInfo);
@@ -183,28 +191,62 @@ struct CalibrationPattern {
     }
   }
 
+  bool detectOn(const cv::Mat &image) {
+    switch (option_) {
+    case PatternOption::ARUCO: {
+
+      break;
+    }
+    case PatternOption::CHESSBOARD: {
+      cv::Mat gray;
+      if (!corners_) {
+        corners_ = std::vector<cv::Point2f>();
+      }
+      std::vector<cv::Point2f> &corners = *corners_;
+      const int32_t flags = cv::CALIB_CB_NORMALIZE_IMAGE |
+                            cv::CALIB_CB_EXHAUSTIVE | cv::CALIB_CB_ACCURACY;
+      cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
+
+      const bool found = cv::findChessboardCornersSB(gray, getChessboardDims(),
+                                                     corners, flags);
+      if (!found) {
+        return false;
+      }
+
+      cv::cornerSubPix(
+          gray, corners, cv::Size(11, 11), cv::Size(-1, -1),
+          cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 30,
+                           0.001));
+
+      return true;
+    }
+    default: {
+
+      break;
+    }
+    }
+    return false;
+  }
+
   PatternOption getPatternName() const { return option_; }
 
   const fs::path &getDatasetPath() const { return dataset_; }
 
-  std::optional<cv::Size> getChessboardDims() const {
-    if (!rows_ || !cols_) {
-      return std::nullopt;
-    }
-    return cv::Size(*cols_, *rows_);
-  }
+  cv::Size getChessboardDims() const { return cv::Size(*cols_, *rows_); }
 
-  std::optional<double> getMarkerSize() const { return markerSize_; }
+  double getMarkerSize() const { return *markerSize_; }
 
-  std::optional<double> getCellSize() const { return cellSize_; }
+  const std::vector<cv::Point2f> &getCorners() const { return *corners_; }
 
-  std::optional<Dictionary> getDictionary() const { return dict_; }
+  double getCellSize() const { return *cellSize_; }
+
+  const Dictionary &getDictionary() const { return *dict_; }
 
   const rclcpp::Logger &getLogger() const { return logger_; }
 
 private:
   // Initialization stuff
-  const fs::path &dataset_;
+  const fs::path dataset_;
   const rclcpp::Logger logger_ = rclcpp::get_logger(HELPER_LOGGERNAME);
 
   // Patterns stuff
@@ -218,6 +260,7 @@ private:
   std::optional<int32_t> rows_;
   std::optional<int32_t> cols_;
   std::optional<double> cellSize_;
+  std::optional<std::vector<cv::Point2f>> corners_;
 
   void initializeDict(const int32_t dictNum, const int32_t id) {
     if (dictNum < 4 || dictNum > 7) {
@@ -228,8 +271,8 @@ private:
     std::string M = std::to_string(dictNum);
     std::string dictName("DICT_" + M + "X" + M + "_" + K);
 
-    std::optional<PredefinedDictionaryType> dictType =
-        magic_enum::enum_cast<PredefinedDictionaryType>(dictName);
+    std::optional<DictionaryEnumType> dictType =
+        magic_enum::enum_cast<DictionaryEnumType>(dictName);
 
     dict_ = cv::aruco::getPredefinedDictionary(*dictType);
   }
@@ -289,22 +332,17 @@ inline void findTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
   case PatternOption::CHESSBOARD: {
     std::vector<std::vector<cv::Point2f>> imagePoints;
     std::vector<std::vector<cv::Point3f>> objectPoints;
-    std::vector<cv::Point2f> corners;
     cv::Mat image;
-    cv::Mat gray;
     cv::Size imageSize;
 
-    const int32_t flags = cv::CALIB_CB_NORMALIZE_IMAGE |
-                          cv::CALIB_CB_EXHAUSTIVE | cv::CALIB_CB_ACCURACY;
-
-    const cv::Size boardSize = *pattern.getChessboardDims();
-    const double squareSize = *pattern.getCellSize();
+    const cv::Size patternDims = pattern.getChessboardDims();
+    const double squareSize = pattern.getCellSize();
 
     static std::vector<cv::Point3f> objTemplate;
     if (objTemplate.empty()) {
-      objTemplate.reserve(boardSize.area());
-      for (int32_t r = 0; r < boardSize.height; ++r)
-        for (int32_t c = 0; c < boardSize.width; ++c)
+      objTemplate.reserve(patternDims.area());
+      for (int32_t r = 0; r < patternDims.height; ++r)
+        for (int32_t c = 0; c < patternDims.width; ++c)
           objTemplate.emplace_back(c * squareSize, r * squareSize, 0.0f);
     }
 
@@ -312,7 +350,6 @@ inline void findTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
 
     const size_t imageNum = *countImages(pattern.getDatasetPath());
     const fs::path &datasetPath = pattern.getDatasetPath();
-    const cv::Size patternDims = *pattern.getChessboardDims();
 
     imagePoints.reserve(imageNum);
 
@@ -322,26 +359,24 @@ inline void findTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
 
     for (size_t i = 0; i < imageNum; ++i) {
       const std::string filename = std::format("{}.png", i);
+#if CV_VERSION_MAJOR == 4 && CV_VERSION_MINOR <= 9
+      image = cv::imread(datasetPath / IMG_FOLDERNAME / filename);
+#else
       cv::imread(datasetPath / IMG_FOLDERNAME / filename, image);
+#endif
 
       if (imageSize.empty()) {
         imageSize = image.size();
       }
 
-      cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
-
-      const bool found =
-          cv::findChessboardCornersSB(gray, patternDims, corners, flags);
+      const bool found = pattern.detectOn(image);
       if (!found) {
         RCLCPP_WARN(logger, "Chessboard not found in %s", filename.c_str());
         rejectedImages.insert(i);
         continue;
       }
 
-      cv::cornerSubPix(
-          gray, corners, cv::Size(11, 11), cv::Size(-1, -1),
-          cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 30,
-                           0.001));
+      const std::vector<cv::Point2f> &corners = pattern.getCorners();
 
       cv::drawChessboardCorners(image, patternDims, corners, found);
       cv::imshow(filename, image);
