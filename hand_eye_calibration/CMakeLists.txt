@@ -40,6 +40,8 @@ find_package(console_bridge REQUIRED)
 find_package(tf2 REQUIRED)
 
 find_package(OpenCV REQUIRED)
+message("OpenCV version: ${OpenCV_VERSION}")
+
 find_package(Boost 1.65 REQUIRED COMPONENTS program_options)
 
 find_package(Sanitizers)
