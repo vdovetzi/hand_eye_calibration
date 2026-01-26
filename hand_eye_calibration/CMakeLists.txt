@@ -38,6 +38,7 @@ find_package(ros_babel_fish REQUIRED)
 find_package(console_bridge_vendor REQUIRED) # Provides console_bridge 0.4.0 on platforms without it.
 find_package(console_bridge REQUIRED)
 find_package(tf2 REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 
 find_package(OpenCV REQUIRED)
 message("OpenCV version: ${OpenCV_VERSION}")
@@ -110,9 +111,36 @@ target_link_libraries(calibrator
   console_bridge::console_bridge
 )
 
+add_executable(tester
+  src/test_calibration.cpp
+)
+ament_target_dependencies(tester
+    rclcpp
+    geometry_msgs
+    sensor_msgs
+    tf2
+    tf2_geometry_msgs
+    image_transport
+    cv_bridge
+    ros_babel_fish
+)
+target_include_directories(tester PRIVATE
+  ${OpenCV_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
+  include
+)
+target_link_libraries(tester
+  ${OpenCV_LIBS}
+  ${Boost_LIBRARIES}
+  csv
+  magic_enum
+  console_bridge::console_bridge
+)
+
 if(USE_SANITIZERS)
   add_sanitizers(dataset_collector)
   add_sanitizers(calibrator)
+  add_sanitizers(tester)
 endif()
 
 if(BUILD_TESTING)
@@ -135,6 +163,7 @@ endif()
 install(TARGETS
     dataset_collector
     calibrator
+    tester
     DESTINATION lib/${PROJECT_NAME}
 )
 

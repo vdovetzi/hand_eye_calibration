@@ -142,16 +142,12 @@ int32_t main(int32_t argc, char **argv) {
     data->t_gripper2base = t_base2gripper;
   }
 
-  cv::Mat R_cam2gripper;
-  cv::Mat t_cam2gripper;
-
   try {
     cv::calibrateHandEye(data->R_gripper2base, data->t_gripper2base,
-                         data->R_target2cam, data->t_target2cam, R_cam2gripper,
-                         t_cam2gripper);
+                         data->R_target2cam, data->t_target2cam,
+                         data->R_cam2gripper, data->t_cam2gripper);
 
-    // Combining into homogeneous transformation matrix and dump to yaml
-    dumpToYAML(R_cam2gripper, t_cam2gripper);
+    dumpToYAML(*data);
 
     RCLCPP_INFO(*logger, "Calibration completed! Saved to %s",
                 CALIBRATION_FILENAME);
@@ -161,10 +157,12 @@ int32_t main(int32_t argc, char **argv) {
   }
 
   std::cout << "Rotation matrix:\n"
-            << cv::format(R_cam2gripper, cv::Formatter::FMT_DEFAULT) << '\n';
+            << cv::format(data->R_cam2gripper, cv::Formatter::FMT_DEFAULT)
+            << '\n';
 
   std::cout << "Translation vector:\n"
-            << cv::format(t_cam2gripper, cv::Formatter::FMT_DEFAULT) << '\n';
+            << cv::format(data->t_cam2gripper, cv::Formatter::FMT_DEFAULT)
+            << '\n';
 
   ret(0);
 }

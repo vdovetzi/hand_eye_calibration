@@ -1,5 +1,6 @@
 #pragma once
 
+#include "geometry_msgs/msg/pose_stamped.hpp"
 #include "magic_enum.hpp"
 #include <csv.hpp>
 #include <eigen3/Eigen/Eigen>
@@ -8,14 +9,22 @@
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/opencv.hpp>
+#if CV_VERSION_MAJOR >= 4 && CV_VERSION_MINOR >= 7
+using cv::aruco::ArucoDetector;
+#define USE_NEW_ARUCO_API 1
+#else
+#define USE_NEW_ARUCO_API 0
+#endif
 #include <ranges>
 #include <rclcpp/rclcpp.hpp>
 #include <regex>
 #include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2/LinearMath/Transform.h>
 
 using csv::CSVFormat;
 using csv::CSVReader;
 using cv::aruco::Dictionary;
+using geometry_msgs::msg::PoseStamped;
 #if CV_VERSION_MAJOR == 4 && CV_VERSION_MINOR <= 6
 using DictionaryEnumType = cv::aruco::PREDEFINED_DICTIONARY_NAME;
 #else
@@ -114,6 +123,59 @@ inline bool validateDataset(const fs::path &dataset) {
   return true;
 }
 
+struct CalibrationData {
+  // Camera calibration
+  cv::Mat K;
+  cv::Mat D;
+
+  // Hand-Eye-Calibration
+  std::vector<cv::Mat> R_target2cam;
+  std::vector<cv::Mat> t_target2cam;
+  std::vector<cv::Mat> R_gripper2base;
+  std::vector<cv::Mat> t_gripper2base;
+
+  cv::Mat R_cam2gripper;
+  cv::Mat t_cam2gripper;
+  cv::Mat T;
+
+  std::unordered_set<size_t> rejectedImages;
+
+  bool read(const fs::path &path) {
+    cv::FileStorage fs(path, cv::FileStorage::READ);
+    if (!fs.isOpened()) {
+      std::cout << "HERE\n";
+      return false;
+    }
+
+    fs["K"] >> K;
+    if (K.empty()) {
+      return false;
+    }
+
+    fs["D"] >> D;
+    if (D.empty()) {
+      return false;
+    }
+
+    fs["T"] >> T;
+    if (T.empty()) {
+      return false;
+    }
+
+    fs.release();
+
+    return true;
+  }
+};
+
+inline cv::Mat toTransformMatrix(const cv::Mat &R, const cv::Mat &t) {
+  cv::Mat T(4, 4, CV_64F);
+  R.copyTo(T(cv::Rect(0, 0, 3, 3)));
+  t.copyTo(T(cv::Rect(3, 0, 1, 3)));
+
+  return T;
+}
+
 enum class PatternOption { ARUCO = 1, CHESSBOARD = 2, CHARUCO = 3 };
 
 struct CalibrationPattern {
@@ -159,6 +221,25 @@ struct CalibrationPattern {
       id_ = std::atoi(patternParams[2].data());
       initializeDict(dictNum, *id_);
       markerSize_ = std::atof(patternParams[3].data());
+#if USE_NEW_ARUCO_API
+      cv::aruco::DetectorParameters params;
+      detector_ = ArucoDetector(*dict_, params);
+#else
+      params_ = cv::aruco::DetectorParameters::create();
+#endif
+
+      float markerSize = *markerSize_;
+
+      objPoints_ = std::vector<cv::Point3f>();
+      objPoints_->emplace_back(
+          cv::Point3f(-markerSize / 2, markerSize / 2, 0)); // top-left
+      objPoints_->emplace_back(
+          cv::Point3f(markerSize / 2, markerSize / 2, 0)); // top-right
+      objPoints_->emplace_back(
+          cv::Point3f(markerSize / 2, -markerSize / 2, 0)); // bottom-right
+      objPoints_->emplace_back(
+          cv::Point3f(-markerSize / 2, -markerSize / 2, 0)); // bottom-left
+
       break;
     }
     case PatternOption::CHARUCO: {
@@ -183,6 +264,18 @@ struct CalibrationPattern {
       rows_ = std::atoi(patternParams[1].data());
       cols_ = std::atoi(patternParams[2].data());
       cellSize_ = std::atof(patternParams[3].data());
+
+      float squareSize = getCellSize();
+      cv::Size dims = getChessboardDims();
+
+      objPoints_ = std::vector<cv::Point3f>();
+      objPoints_->reserve(dims.area());
+      for (int32_t r = 0; r < dims.height; ++r) {
+        for (int32_t c = 0; c < dims.width; ++c) {
+          objPoints_->emplace_back(c * squareSize, r * squareSize, 0.0f);
+        }
+      }
+
       break;
     }
     default: {
@@ -191,30 +284,96 @@ struct CalibrationPattern {
     }
   }
 
+  std::optional<PoseStamped> estimatePose(const CalibrationData &data,
+                                          const CalibrationPattern &pattern,
+                                          size_t index) {
+    const auto &objPoints = pattern.getObjPoints();
+
+    cv::Mat rvec, tvec;
+    bool success = cv::solvePnP(objPoints, pattern.getImgPoints(), data.K,
+                                data.D, rvec, tvec);
+
+    if (!success) {
+      return std::nullopt;
+    }
+
+    static cv::Mat R;
+    cv::Rodrigues(rvec, R);
+    cv::Mat T_target2cam = toTransformMatrix(R, tvec);
+
+    const cv::Point3f &objPoint = objPoints[index];
+
+    cv::Mat pointInCameraFrame =
+        T_target2cam * cv::Mat(std::initializer_list<double>(
+                           {objPoint.x, objPoint.y, objPoint.z, 1.0}));
+
+    PoseStamped msg;
+
+    msg.pose.position.x =
+        pointInCameraFrame.at<double>(0) / pointInCameraFrame.at<double>(3);
+    msg.pose.position.y =
+        pointInCameraFrame.at<double>(1) / pointInCameraFrame.at<double>(3);
+    msg.pose.position.z =
+        pointInCameraFrame.at<double>(2) / pointInCameraFrame.at<double>(3);
+
+    static tf2::Matrix3x3 tf_rotation;
+
+    for (int i = 0; i < R.rows; ++i) {
+      for (int j = 0; j < R.cols; ++j) {
+        tf_rotation[i][j] = R.at<double>(i, j);
+      }
+    }
+
+    static tf2::Quaternion tf_quat;
+    tf_rotation.getRotation(tf_quat);
+    tf_quat.normalize();
+
+    msg.pose.orientation.x = tf_quat.x();
+    msg.pose.orientation.y = tf_quat.y();
+    msg.pose.orientation.z = tf_quat.z();
+    msg.pose.orientation.w = tf_quat.w();
+
+    return msg;
+  }
+
   bool detectOn(const cv::Mat &image) {
     switch (option_) {
     case PatternOption::ARUCO: {
+      static std::vector<int32_t> markerIds;
+      static std::vector<std::vector<cv::Point2f>> markerCorners,
+          rejectedCandidates;
+#if USE_NEW_ARUCO_API
+      detector_->detectMarkers(image, markerCorners, markerIds,
+                               rejectedCandidates);
+#else
+      cv::aruco::detectMarkers(image, dict_, markerCorners, markerIds, params_,
+                               rejectedCandidates);
+#endif
 
-      break;
+      auto it = std::find(markerIds.begin(), markerIds.end(), *id_);
+      if (!markerIds.empty() && it != markerIds.end()) {
+        size_t ind = it - markerIds.begin();
+        assert(markerIds[ind] == *id_);
+        corners_ = markerCorners[ind];
+      } else {
+        corners_ = std::vector<cv::Point2f>();
+      }
+      return true;
     }
     case PatternOption::CHESSBOARD: {
       cv::Mat gray;
-      if (!corners_) {
-        corners_ = std::vector<cv::Point2f>();
-      }
-      std::vector<cv::Point2f> &corners = *corners_;
       const int32_t flags = cv::CALIB_CB_NORMALIZE_IMAGE |
                             cv::CALIB_CB_EXHAUSTIVE | cv::CALIB_CB_ACCURACY;
       cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
 
       const bool found = cv::findChessboardCornersSB(gray, getChessboardDims(),
-                                                     corners, flags);
+                                                     corners_, flags);
       if (!found) {
         return false;
       }
 
       cv::cornerSubPix(
-          gray, corners, cv::Size(11, 11), cv::Size(-1, -1),
+          gray, corners_, cv::Size(11, 11), cv::Size(-1, -1),
           cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 30,
                            0.001));
 
@@ -236,13 +395,15 @@ struct CalibrationPattern {
 
   double getMarkerSize() const { return *markerSize_; }
 
-  const std::vector<cv::Point2f> &getCorners() const { return *corners_; }
+  const std::vector<cv::Point2f> &getImgPoints() const { return corners_; }
 
   double getCellSize() const { return *cellSize_; }
 
   const Dictionary &getDictionary() const { return *dict_; }
 
   const rclcpp::Logger &getLogger() const { return logger_; }
+
+  const std::vector<cv::Point3f> &getObjPoints() const { return *objPoints_; }
 
 private:
   // Initialization stuff
@@ -252,15 +413,22 @@ private:
   // Patterns stuff
   PatternOption option_;
   // ArUco & ChArUco
-  std::optional<cv::aruco::Dictionary> dict_;
   std::optional<int32_t> id_;
   std::optional<double> markerSize_;
+#if USE_NEW_ARUCO_API
+  std::optional<cv::aruco::Dictionary> dict_;
+  std::optional<ArucoDetector> detector_;
+#else
+  cv::Ptr<cv::aruco::Dictionary> dict_;
+  cv::Ptr<cv::aruco::DetectorParameters> params_;
+#endif
 
   // Chessboard & ChArUco
   std::optional<int32_t> rows_;
   std::optional<int32_t> cols_;
   std::optional<double> cellSize_;
-  std::optional<std::vector<cv::Point2f>> corners_;
+  std::vector<cv::Point2f> corners_;
+  std::optional<std::vector<cv::Point3f>> objPoints_;
 
   void initializeDict(const int32_t dictNum, const int32_t id) {
     if (dictNum < 4 || dictNum > 7) {
@@ -294,25 +462,32 @@ private:
   }
 };
 
-struct CalibrationData {
-  // Camera calibration
-  cv::Mat K;
-  cv::Mat D;
-
-  // Hand-Eye-Calibration
-  std::vector<cv::Mat> R_target2cam;
-  std::vector<cv::Mat> t_target2cam;
-  std::vector<cv::Mat> R_gripper2base;
-  std::vector<cv::Mat> t_gripper2base;
-
-  std::unordered_set<size_t> rejectedImages;
-};
-
 inline std::optional<size_t> getImageNumber(const std::string &imageName) {
   if (std::smatch matches; std::regex_match(imageName, matches, PATTERN)) {
     return std::stoi(matches[1].str());
   }
   return std::nullopt;
+}
+
+inline tf2::Transform cvMatToTF2Transform(const cv::Mat &T_cv) {
+  if (T_cv.rows != 4 || T_cv.cols != 4) {
+    throw std::runtime_error("Transformation matrix must be 4x4");
+  }
+
+  cv::Mat R = T_cv(cv::Rect(0, 0, 3, 3));
+  cv::Mat t = T_cv(cv::Rect(3, 0, 1, 3));
+
+  tf2::Matrix3x3 tf_rotation;
+  for (int i = 0; i < R.rows; i++) {
+    for (int j = 0; j < R.cols; j++) {
+      tf_rotation[i][j] = R.at<double>(i, j);
+    }
+  }
+
+  tf2::Vector3 tf_translation(t.at<double>(0, 0), t.at<double>(1, 0),
+                              t.at<double>(2, 0));
+
+  return tf2::Transform(tf_rotation, tf_translation);
 }
 
 // Calibrating camera to get camera's intrinsics parameters and then get the
@@ -336,15 +511,6 @@ inline void findTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
     cv::Size imageSize;
 
     const cv::Size patternDims = pattern.getChessboardDims();
-    const double squareSize = pattern.getCellSize();
-
-    static std::vector<cv::Point3f> objTemplate;
-    if (objTemplate.empty()) {
-      objTemplate.reserve(patternDims.area());
-      for (int32_t r = 0; r < patternDims.height; ++r)
-        for (int32_t c = 0; c < patternDims.width; ++c)
-          objTemplate.emplace_back(c * squareSize, r * squareSize, 0.0f);
-    }
 
     std::unordered_set<size_t> &rejectedImages = data.rejectedImages;
 
@@ -376,7 +542,7 @@ inline void findTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
         continue;
       }
 
-      const std::vector<cv::Point2f> &corners = pattern.getCorners();
+      const std::vector<cv::Point2f> &corners = pattern.getImgPoints();
 
       cv::drawChessboardCorners(image, patternDims, corners, found);
       cv::imshow(filename, image);
@@ -391,7 +557,7 @@ inline void findTarget2Cam(CalibrationPattern &pattern, CalibrationData &data) {
       cv::destroyWindow(filename);
 
       imagePoints.emplace_back(corners);
-      objectPoints.emplace_back(objTemplate);
+      objectPoints.emplace_back(pattern.getObjPoints());
     }
 
     cv::destroyAllWindows();
@@ -572,12 +738,12 @@ inline void findGripper2Base(const fs::path &datasetPath,
   }
 }
 
-inline void dumpToYAML(const cv::Mat &R, const cv::Mat &t) {
-  cv::Mat T(4, 4, CV_64F);
-  R.copyTo(T(cv::Rect(0, 0, 3, 3)));
-  t.copyTo(T(cv::Rect(3, 0, 1, 3)));
+inline void dumpToYAML(const CalibrationData &data) {
+  cv::Mat T = toTransformMatrix(data.R_cam2gripper, data.t_cam2gripper);
 
   cv::FileStorage out(CALIBRATION_FILENAME, cv::FileStorage::WRITE);
-  out << "Transformation Matrix" << T;
+  out << "T" << T;
+  out << "K" << data.K;
+  out << "D" << data.D;
   out.release();
 }
