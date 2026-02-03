@@ -115,7 +115,7 @@ inline bool validateDataset(const fs::path &dataset) {
     return false;
   }
 
-  if (*posesCountOpt != *posesCountOpt) {
+  if (*posesCountOpt != *imagesCountOpt) {
     RCLCPP_DEBUG(logger, "Poses count is not equal to the images count");
     return false;
   }
