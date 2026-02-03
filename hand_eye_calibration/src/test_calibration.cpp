@@ -1,17 +1,22 @@
 // https://github.com/ros/class_loader/pull/199
 #include <console_bridge/console.h>
 
-#include "geometry_msgs/msg/transform.hpp"
-#include <boost/program_options.hpp>
-#include <cv_bridge/cv_bridge.hpp>
 #include <hand_eye_calibration/calibrate_helpers.hpp>
 #include <hand_eye_calibration/test_helpers.hpp>
 #include <hand_eye_calibration/ui.hpp>
+
+// ROS
+#include <cv_bridge/cv_bridge.hpp>
 #include <image_transport/image_transport.hpp>
-#include <opencv2/calib3d.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/image_encodings.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+
+// OpenCV
+#include <opencv2/calib3d.hpp>
+
+// Boost
+#include <boost/program_options.hpp>
 
 using Level = rclcpp::Logger::Level;
 using image_transport::ImageTransport;
@@ -187,7 +192,7 @@ int32_t main(int32_t argc, char **argv) {
 
     ui->show();
 
-    point_guard.lock();
+    std::lock_guard<std::mutex> lock(point_guard);
     if (clicked_ind) {
 
       std::optional<PoseStamped> poseOpt =
@@ -205,9 +210,7 @@ int32_t main(int32_t argc, char **argv) {
 
       tf2::Transform T_point_in_cam;
       tf2::fromMsg(poseInCam.pose, T_point_in_cam);
-
       tf2::Transform T_point_in_gripper = T_cam2gripper * T_point_in_cam;
-
       geometry_msgs::msg::Transform tf = tf2::toMsg(T_point_in_gripper);
 
       // TODO: publish in RViz
@@ -217,7 +220,10 @@ int32_t main(int32_t argc, char **argv) {
       poseInGripper.pose.position.x = tf.translation.x;
       poseInGripper.pose.position.y = tf.translation.y;
       poseInGripper.pose.position.z = tf.translation.z;
-      poseInGripper.pose.orientation = tf.rotation;
+
+      tf2::Quaternion q;
+      q.setRPY(0, M_PI / 2., 0.);
+      poseInGripper.pose.orientation = tf2::toMsg(q.normalized());
 
       fillMessage(*message, armTopicType, poseInGripper);
 
@@ -225,7 +231,6 @@ int32_t main(int32_t argc, char **argv) {
 
       clicked_ind.reset();
     }
-    point_guard.unlock();
   }
 
   ret(0);
