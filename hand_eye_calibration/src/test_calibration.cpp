@@ -49,9 +49,10 @@ int32_t main(int32_t argc, char **argv) {
   po::options_description desc("Allowed options");
   desc.add_options()("help,h", "Shows help message")(
       "arm-topic,at", po::value<std::string>()->required(),
-      "Arm topic for sending command")("image-topic,it",
-                                       po::value<std::string>()->required(),
-                                       "Input image topic")(
+      "Arm topic for sending command")(
+      "image-topic,it", po::value<std::string>()->required(),
+      "Input image topic")("arm-frame,af", po::value<std::string>()->required(),
+                           "Arm's base_link frame_id for RViz visualization")(
       "calibration-path,cp", po::value<std::string>()->default_value("."),
       "Path to the directory, where calibration.yaml is located")(
       "pattern-type,pt", po::value<std::string>()->required(),
@@ -76,6 +77,7 @@ int32_t main(int32_t argc, char **argv) {
   // Getting parsed input
   const std::string armTopicName = vm["arm-topic"].as<std::string>();
   const std::string imageTopicName = vm["image-topic"].as<std::string>();
+  const std::string armFrameId = vm["arm-frame"].as<std::string>();
   const fs::path calibrationPath =
       fs::path(vm["calibration-path"].as<std::string>()) / CALIBRATION_FILENAME;
   const std::string patternInfo = vm["pattern-type"].as<std::string>();
@@ -210,6 +212,8 @@ int32_t main(int32_t argc, char **argv) {
 
       // TODO: publish in RViz
       PoseStamped poseInGripper;
+      poseInGripper.header.frame_id = armFrameId;
+      poseInGripper.header.stamp = node->now();
       poseInGripper.pose.position.x = tf.translation.x;
       poseInGripper.pose.position.y = tf.translation.y;
       poseInGripper.pose.position.z = tf.translation.z;
