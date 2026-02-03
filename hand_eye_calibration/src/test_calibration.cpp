@@ -193,7 +193,7 @@ int32_t main(int32_t argc, char **argv) {
     ui->show();
 
     std::lock_guard<std::mutex> lock(point_guard);
-    if (clicked_ind) {
+    if (clicked_ind.has_value()) {
 
       std::optional<PoseStamped> poseOpt =
           pattern->estimatePose(*data, *pattern, *clicked_ind);
