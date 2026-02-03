@@ -170,8 +170,10 @@ struct CalibrationData {
 
 inline cv::Mat toTransformMatrix(const cv::Mat &R, const cv::Mat &t) {
   cv::Mat T(4, 4, CV_64F);
+  T.setTo(0.0);
   R.copyTo(T(cv::Rect(0, 0, 3, 3)));
   t.copyTo(T(cv::Rect(3, 0, 1, 3)));
+  T.at<double>(3, 3) = 1.0;
 
   return T;
 }
