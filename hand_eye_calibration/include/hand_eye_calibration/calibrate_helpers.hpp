@@ -9,12 +9,6 @@
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/opencv.hpp>
-#if CV_VERSION_MAJOR >= 4 && CV_VERSION_MINOR >= 7
-using cv::aruco::ArucoDetector;
-#define USE_NEW_ARUCO_API 1
-#else
-#define USE_NEW_ARUCO_API 0
-#endif
 #include <ranges>
 #include <rclcpp/rclcpp.hpp>
 #include <regex>
@@ -29,6 +23,9 @@ using geometry_msgs::msg::PoseStamped;
 using DictionaryEnumType = cv::aruco::PREDEFINED_DICTIONARY_NAME;
 #else
 using DictionaryEnumType = cv::aruco::PredefinedDictionaryType;
+#endif
+#if CV_VERSION_MAJOR >= 4 && CV_VERSION_MINOR >= 7
+using cv::aruco::ArucoDetector;
 #endif
 namespace fs = std::filesystem;
 
@@ -223,7 +220,7 @@ struct CalibrationPattern {
       id_ = std::atoi(patternParams[2].data());
       initializeDict(dictNum, *id_);
       markerSize_ = std::atof(patternParams[3].data());
-#if USE_NEW_ARUCO_API
+#if CV_VERSION_MAJOR >= 4 && CV_VERSION_MINOR >= 7
       cv::aruco::DetectorParameters params;
       detector_ = ArucoDetector(*dict_, params);
 #else
@@ -344,7 +341,7 @@ struct CalibrationPattern {
       static std::vector<int32_t> markerIds;
       static std::vector<std::vector<cv::Point2f>> markerCorners,
           rejectedCandidates;
-#if USE_NEW_ARUCO_API
+#if CV_VERSION_MAJOR >= 4 && CV_VERSION_MINOR >= 7
       detector_->detectMarkers(image, markerCorners, markerIds,
                                rejectedCandidates);
 #else
@@ -417,7 +414,7 @@ private:
   // ArUco & ChArUco
   std::optional<int32_t> id_;
   std::optional<double> markerSize_;
-#if USE_NEW_ARUCO_API
+#if CV_VERSION_MAJOR >= 4 && CV_VERSION_MINOR >= 7
   std::optional<cv::aruco::Dictionary> dict_;
   std::optional<ArucoDetector> detector_;
 #else
