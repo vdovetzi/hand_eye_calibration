@@ -254,7 +254,7 @@ int32_t main(int32_t argc, const char **argv) {
         }
         // Checking poses.csv
         std::optional<size_t> nRowsOpt = countPoses(outputPath);
-        if (!nRowsOpt) {
+        if (!nRowsOpt.has_value()) {
           bool stop = false;
           while (!stop) {
             RCLCPP_WARN(*logger, "Existing poses.csv is corrupted or empty. "
@@ -409,13 +409,13 @@ int32_t main(int32_t argc, const char **argv) {
 
       // Counting total number of images and poses
       std::optional<size_t> posesCountOpt = countPoses(outputPath);
-      if (!posesCountOpt) {
+      if (!posesCountOpt.has_value()) {
         RCLCPP_ERROR(*logger, "Error: cannot count rows in poses.csv. Maybe "
                               "file is empty or corrupted?");
         ret(1);
       }
       std::optional<size_t> imagesCountOpt = countImages(outputPath);
-      if (!imagesCountOpt) {
+      if (!imagesCountOpt.has_value()) {
         RCLCPP_ERROR(*logger, "Error: cannot count images in images/. Maybe "
                               "directory was corrupted?");
         ret(1);
