@@ -697,13 +697,13 @@ inline void findGripper2Base(const fs::path &datasetPath,
 
       tf2::Matrix3x3 R_tf2;
       R_tf2.setEulerYPR(yaw, pitch, roll);
-      cv::Mat R_cv;
+      cv::Mat R_cv(3, 3, CV_64F);
 
       for (int32_t i = 0; i < R_cv.rows; ++i) {
         const tf2::Vector3 &row = R_tf2.getRow(i);
-        R_cv.at<cv::Vec3d>(i)[0] = row[0];
-        R_cv.at<cv::Vec3d>(i)[1] = row[1];
-        R_cv.at<cv::Vec3d>(i)[2] = row[2];
+        R_cv.at<double>(i, 0) = row[0];
+        R_cv.at<double>(i, 1) = row[1];
+        R_cv.at<double>(i, 2) = row[2];
       }
 
       Rs.emplace_back(R_cv);
@@ -720,13 +720,13 @@ inline void findGripper2Base(const fs::path &datasetPath,
 
       tf2::Matrix3x3 R_tf2;
       R_tf2.setEulerYPR(yaw, pitch, roll);
-      cv::Mat R_cv;
+      cv::Mat R_cv(3, 3, CV_64F);
 
       for (int32_t i = 0; i < R_cv.rows; ++i) {
         const tf2::Vector3 &row = R_tf2.getRow(i);
-        R_cv.at<cv::Vec3d>(i)[0] = row[0];
-        R_cv.at<cv::Vec3d>(i)[1] = row[1];
-        R_cv.at<cv::Vec3d>(i)[2] = row[2];
+        R_cv.at<double>(i, 0) = row[0];
+        R_cv.at<double>(i, 1) = row[1];
+        R_cv.at<double>(i, 2) = row[2];
       }
 
       Rs.emplace_back(R_cv);
