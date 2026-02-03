@@ -102,12 +102,12 @@ inline bool validateDataset(const fs::path &dataset) {
   std::optional<size_t> imagesCountOpt = countImages(dataset);
   std::optional<size_t> posesCountOpt = countPoses(dataset);
 
-  if (!imagesCountOpt) {
+  if (!imagesCountOpt.has_value()) {
     RCLCPP_DEBUG(logger, "Cannot count images in images/ folder");
     return false;
   }
 
-  if (!posesCountOpt) {
+  if (!posesCountOpt.has_value()) {
     RCLCPP_DEBUG(logger, "Cannot count poses in poses.csv");
     return false;
   }
