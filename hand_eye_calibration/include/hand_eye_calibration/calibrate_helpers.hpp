@@ -177,11 +177,11 @@ inline cv::Mat toTransformMatrix(const cv::Mat &R, const cv::Mat &t) {
 enum class PatternOption { ARUCO = 1, CHESSBOARD = 2, CHARUCO = 3 };
 
 struct CalibrationPattern {
-  CalibrationPattern() {}
-  CalibrationPattern(const std::string &patternInfo) {
+  CalibrationPattern() = default;
+  explicit CalibrationPattern(const std::string &patternInfo) {
     setPatternInfo(patternInfo);
   }
-  CalibrationPattern(const fs::path &dataset) : dataset_(dataset) {}
+  explicit CalibrationPattern(const fs::path &dataset) : dataset_(dataset) {}
   CalibrationPattern(const fs::path &dataset, const std::string &patternInfo)
       : dataset_(dataset) {
     setPatternInfo(patternInfo);

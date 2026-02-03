@@ -18,6 +18,12 @@ const cv::Scalar CIRCLE_COLOR(0, 160, 255);   // Color for circles
 
 class cvUI {
 public:
+  cvUI() = delete;
+  cvUI(const cvUI &) = delete;
+  cvUI operator=(const cvUI &) = delete;
+  cvUI(cvUI &&) = delete;
+  cvUI &&operator=(cvUI &&) = delete;
+
   cvUI(const std::vector<cv::Point2f> &pts, std::optional<size_t> &clicked,
        std::mutex &pt_grd, cv::Mat &img, std::mutex &img_grd)
       : points_(pts), image_(img), image_guard_(img_grd), point_guard_(pt_grd),
@@ -107,13 +113,6 @@ private:
       std::unique_lock<std::mutex> lock(point_guard_);
       clicked_index_ = closestIndex;
       lock.unlock();
-
-      // const cv::Point2f &clicked_point = points_[closestIndex];
-      // std::cout << "======================================" << std::endl;
-      // std::cout << "Clicked on point index: " << closestIndex << std::endl;
-      // std::cout << "Point coordinates: (" << clicked_point.x << ", "
-      //           << clicked_point.y << ")" << std::endl;
-      // std::cout << "======================================" << std::endl;
     } else {
       std::cout << "Clicked outside of all points" << std::endl;
     }
