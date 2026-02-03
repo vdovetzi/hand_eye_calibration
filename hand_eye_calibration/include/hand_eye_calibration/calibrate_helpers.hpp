@@ -140,7 +140,6 @@ struct CalibrationData {
   bool read(const fs::path &path) {
     cv::FileStorage fs(path, cv::FileStorage::READ);
     if (!fs.isOpened()) {
-      std::cout << "HERE\n";
       return false;
     }
 
