@@ -2,7 +2,6 @@
 
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=vdovetzi_hand_eye_calibration&metric=alert_status&token=29ad187166a6675ab0c2e984681a5e750e86b7e6)](https://sonarcloud.io/summary/new_code?id=vdovetzi_hand_eye_calibration)
 [![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=vdovetzi_hand_eye_calibration&metric=code_smells&token=29ad187166a6675ab0c2e984681a5e750e86b7e6)](https://sonarcloud.io/summary/new_code?id=vdovetzi_hand_eye_calibration)
-[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=vdovetzi_hand_eye_calibration&metric=duplicated_lines_density&token=29ad187166a6675ab0c2e984681a5e750e86b7e6)](https://sonarcloud.io/summary/new_code?id=vdovetzi_hand_eye_calibration)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=vdovetzi_hand_eye_calibration&metric=security_rating&token=29ad187166a6675ab0c2e984681a5e750e86b7e6)](https://sonarcloud.io/summary/new_code?id=vdovetzi_hand_eye_calibration)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=vdovetzi_hand_eye_calibration&metric=sqale_rating&token=29ad187166a6675ab0c2e984681a5e750e86b7e6)](https://sonarcloud.io/summary/new_code?id=vdovetzi_hand_eye_calibration)
 ![ROS2](https://img.shields.io/badge/ROS2-Jazzy-orange)
