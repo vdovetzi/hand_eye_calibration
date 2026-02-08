@@ -364,16 +364,16 @@ struct CalibrationPattern {
                             cv::CALIB_CB_EXHAUSTIVE | cv::CALIB_CB_ACCURACY;
       cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
 
-      const bool found = cv::findChessboardCornersSB(gray, getChessboardDims(),
-                                                     corners_, flags);
+      const bool found =
+          cv::findChessboardCorners(gray, getChessboardDims(), corners_, flags);
       if (!found) {
         return false;
       }
 
       cv::cornerSubPix(
-          gray, corners_, cv::Size(11, 11), cv::Size(-1, -1),
-          cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 30,
-                           0.001));
+          gray, corners_, cv::Size(5, 5), cv::Size(-1, -1),
+          cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::MAX_ITER,
+                           30, 0.001));
 
       return true;
     }
