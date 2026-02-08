@@ -89,21 +89,21 @@ target_link_libraries(dataset_collector
   console_bridge::console_bridge
 )
 
-add_executable(calibrator
-  src/calibrate.cpp
+add_executable(compute_calibration
+  src/compute_calibration.cpp
 )
-ament_target_dependencies(calibrator
+ament_target_dependencies(compute_calibration
     rclcpp
     geometry_msgs
     sensor_msgs
     tf2
 )
-target_include_directories(calibrator PRIVATE
+target_include_directories(compute_calibration PRIVATE
   ${OpenCV_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
   include
 )
-target_link_libraries(calibrator
+target_link_libraries(compute_calibration
   ${OpenCV_LIBS}
   ${Boost_LIBRARIES}
   csv
@@ -111,10 +111,10 @@ target_link_libraries(calibrator
   console_bridge::console_bridge
 )
 
-add_executable(tester
-  src/test_calibration.cpp
+add_executable(validate_calibration
+  src/validate_calibration.cpp
 )
-ament_target_dependencies(tester
+ament_target_dependencies(validate_calibration
     rclcpp
     geometry_msgs
     sensor_msgs
@@ -124,12 +124,12 @@ ament_target_dependencies(tester
     cv_bridge
     ros_babel_fish
 )
-target_include_directories(tester PRIVATE
+target_include_directories(validate_calibration PRIVATE
   ${OpenCV_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
   include
 )
-target_link_libraries(tester
+target_link_libraries(validate_calibration
   ${OpenCV_LIBS}
   ${Boost_LIBRARIES}
   csv
@@ -139,8 +139,8 @@ target_link_libraries(tester
 
 if(USE_SANITIZERS)
   add_sanitizers(dataset_collector)
-  add_sanitizers(calibrator)
-  add_sanitizers(tester)
+  add_sanitizers(compute_calibration)
+  add_sanitizers(validate_calibration)
 endif()
 
 if(BUILD_TESTING)
@@ -162,8 +162,8 @@ endif()
 
 install(TARGETS
     dataset_collector
-    calibrator
-    tester
+    compute_calibration
+    validate_calibration
     DESTINATION lib/${PROJECT_NAME}
 )
 

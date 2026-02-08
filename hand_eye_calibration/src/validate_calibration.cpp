@@ -173,6 +173,10 @@ int32_t main(int32_t argc, char **argv) {
       fish->create_publisher(*node, armTopicName, armTopicType, 1);
   CompoundMessage::SharedPtr message =
       fish->create_message_shared(armTopicType);
+  auto rvizCamPub =
+      node->create_publisher<PoseStamped>("calibration_pose_cam", 1);
+  auto rvizGripperPub =
+      node->create_publisher<PoseStamped>("calibration_pose_gripper", 1);
 
   auto ui = std::make_unique<ui::cvUI>(pattern->getImgPoints(), clicked_ind,
                                        point_guard, image, image_guard);
@@ -203,17 +207,16 @@ int32_t main(int32_t argc, char **argv) {
         continue;
       }
 
-      // TODO: publish in RViz
       PoseStamped poseInCam = *poseOpt;
       poseInCam.header.frame_id = camera_frame;
       poseInCam.header.stamp = node->now();
+      rvizCamPub->publish(poseInCam);
 
       tf2::Transform T_point_in_cam;
       tf2::fromMsg(poseInCam.pose, T_point_in_cam);
       tf2::Transform T_point_in_gripper = T_cam2gripper * T_point_in_cam;
       geometry_msgs::msg::Transform tf = tf2::toMsg(T_point_in_gripper);
 
-      // TODO: publish in RViz
       PoseStamped poseInGripper;
       poseInGripper.header.frame_id = armFrameId;
       poseInGripper.header.stamp = node->now();
@@ -224,6 +227,7 @@ int32_t main(int32_t argc, char **argv) {
       tf2::Quaternion q;
       q.setRPY(0, M_PI / 2., 0.);
       poseInGripper.pose.orientation = tf2::toMsg(q.normalized());
+      rvizGripperPub->publish(poseInGripper);
 
       fillMessage(*message, armTopicType, poseInGripper);
 

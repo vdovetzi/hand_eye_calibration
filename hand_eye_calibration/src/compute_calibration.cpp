@@ -132,10 +132,11 @@ int32_t main(int32_t argc, char **argv) {
       cv::Mat &R = data->R_gripper2base[i];
       cv::Mat &t = data->t_gripper2base[i];
 
-      cv::Mat R_T = R.t();
+      cv::Mat R_inv = R.t();
+      cv::Mat t_inv = -R_inv * t;
 
-      R_base2gripper.emplace_back(R_T);
-      t_base2gripper.emplace_back(-R_T * t);
+      R_base2gripper.emplace_back(R_inv);
+      t_base2gripper.emplace_back(t_inv);
     }
 
     data->R_gripper2base = R_base2gripper;
