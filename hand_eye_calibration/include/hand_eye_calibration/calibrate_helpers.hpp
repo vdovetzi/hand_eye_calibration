@@ -641,15 +641,11 @@ inline void findGripper2Base(const fs::path &datasetPath,
   Rs.reserve(poses.size());
   tvecs.reserve(poses.size());
 
-  Eigen::Matrix3d R_eigen;
-  cv::Mat rvec;
-
   for (const auto &pose : poses) {
+    cv::Mat R_cv(3, 3, CV_64F);
+    cv::Mat tvec = (cv::Mat_<double>(3, 1) << pose[0], pose[1], pose[2]);
     switch (*posesOption) {
     case (PosesOption::ROT_XYZW): {
-      tvecs.emplace_back(
-          std::initializer_list<double>{pose[0], pose[1], pose[2]});
-
       Eigen::Quaterniond q;
 
       q.x() = pose[3];
@@ -657,17 +653,12 @@ inline void findGripper2Base(const fs::path &datasetPath,
       q.z() = pose[5];
       q.w() = pose[6];
 
-      R_eigen = q.normalized().toRotationMatrix();
+      Eigen::Matrix3d R_eigen = q.normalized().toRotationMatrix();
 
-      cv::Mat R_cv;
       cv::eigen2cv(R_eigen, R_cv);
-
-      Rs.emplace_back(R_cv);
       break;
     }
     case (PosesOption::ROT_WXYZ): {
-      tvecs.emplace_back(
-          std::initializer_list<double>{pose[0], pose[1], pose[2]});
       Eigen::Quaterniond q;
 
       q.w() = pose[3];
@@ -675,25 +666,18 @@ inline void findGripper2Base(const fs::path &datasetPath,
       q.y() = pose[5];
       q.z() = pose[6];
 
-      R_eigen = q.normalized().toRotationMatrix();
+      Eigen::Matrix3d R_eigen = q.normalized().toRotationMatrix();
 
-      cv::Mat R_cv;
       cv::eigen2cv(R_eigen, R_cv);
-
-      Rs.emplace_back(R_cv);
       break;
     }
     case (PosesOption::ROT_RPY_RAD): {
-      tvecs.emplace_back(
-          std::initializer_list<double>{pose[0], pose[1], pose[2]});
-
       double roll = pose[3];
       double pitch = pose[4];
       double yaw = pose[5];
 
       tf2::Matrix3x3 R_tf2;
       R_tf2.setEulerYPR(yaw, pitch, roll);
-      cv::Mat R_cv(3, 3, CV_64F);
 
       for (int32_t i = 0; i < R_cv.rows; ++i) {
         const tf2::Vector3 &row = R_tf2.getRow(i);
@@ -702,21 +686,15 @@ inline void findGripper2Base(const fs::path &datasetPath,
         R_cv.at<double>(i, 2) = row[2];
       }
 
-      Rs.emplace_back(R_cv);
-
       break;
     }
     case (PosesOption::ROT_RPY_DEG): {
-      tvecs.emplace_back(
-          std::initializer_list<double>{pose[0], pose[1], pose[2]});
-
       double roll = pose[3] * DEG2RAD;
       double pitch = pose[4] * DEG2RAD;
       double yaw = pose[5] * DEG2RAD;
 
       tf2::Matrix3x3 R_tf2;
       R_tf2.setEulerYPR(yaw, pitch, roll);
-      cv::Mat R_cv(3, 3, CV_64F);
 
       for (int32_t i = 0; i < R_cv.rows; ++i) {
         const tf2::Vector3 &row = R_tf2.getRow(i);
@@ -724,8 +702,6 @@ inline void findGripper2Base(const fs::path &datasetPath,
         R_cv.at<double>(i, 1) = row[1];
         R_cv.at<double>(i, 2) = row[2];
       }
-
-      Rs.emplace_back(R_cv);
 
       break;
     }
@@ -733,6 +709,8 @@ inline void findGripper2Base(const fs::path &datasetPath,
       throw std::runtime_error("Not implemented!");
     }
     }
+    Rs.emplace_back(R_cv);
+    tvecs.emplace_back(tvec);
   }
 }
 
