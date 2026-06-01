@@ -17,7 +17,9 @@
   <depend>rclcpp</depend>
   <depend>image_transport</depend>
   <depend>cv_bridge</depend>
+  <depend>geometry_msgs</depend>
   <depend>sensor_msgs</depend>
+  <depend>std_srvs</depend>
   <depend>console_bridge_vendor</depend>
   <depend>libopencv-dev</depend>
   <depend>libopencv-contrib-dev</depend>
