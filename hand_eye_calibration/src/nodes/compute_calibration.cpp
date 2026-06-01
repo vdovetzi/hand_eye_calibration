@@ -2,11 +2,13 @@
 #include <console_bridge/console.h>
 
 #include <boost/program_options.hpp>
-#include <hand_eye_calibration/calibrate_helpers.hpp>
+#include <hand_eye_calibration/helpers/calibrate_helpers.hpp>
+#include <magic_enum.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core.hpp>
 
 using Level = rclcpp::Logger::Level;
+using namespace calibration_helpers;
 namespace po = boost::program_options;
 
 std::shared_ptr<rclcpp::Logger> logger;
@@ -25,8 +27,6 @@ void signalHandler([[maybe_unused]] int32_t signal) {
   ret(0);
 }
 
-// TODO: add opportunity to provide intrinsics in cli and thus not to find them
-// TODO: add YPR order for rotation
 int32_t main(int32_t argc, char **argv) {
   signal(SIGINT, signalHandler);
   rclcpp::init(argc, argv);
@@ -37,7 +37,7 @@ int32_t main(int32_t argc, char **argv) {
   po::options_description desc("Allowed options");
   desc.add_options()("help,h", "Shows help message")(
       "dataset-path,dp", po::value<std::string>()->required(),
-      "Input dataset path")(
+      "Path to dataset directory containing images/ and poses.csv")(
       "eye-to-hand,eth", po::value<bool>()->default_value(true),
       "Whether it is eye-to-hand calibration or not (i.e. eye-in-hand)")(
       "calibration-pattern,cp", po::value<std::string>()->required(),
@@ -50,7 +50,12 @@ int32_t main(int32_t argc, char **argv) {
       "2. translation(x y z) rotation(w x y z)\n"
       "3. translation(x y z) rotation(r p y) in rad\n"
       "4. translation(x y z) rotation(r p y) in deg\n"
-      "5. joints(j0 j1 j2 ... jn)")(
+      "5. translation(x y z) rotation(y p r) in rad\n"
+      "6. translation(x y z) rotation(y p r) in deg\n"
+      "7. joints(j0 j1 j2 ... jn)")(
+      "intrinsics-path,ip", po::value<std::string>(),
+      "Optional YAML path with camera intrinsics K and D. If provided, "
+      "intrinsics are loaded instead of recalibrated")(
       "log-level,ll", po::value<std::string>()->default_value("Info"),
       "Log-level: Info, Debug, Error, Fatal");
 
@@ -68,13 +73,16 @@ int32_t main(int32_t argc, char **argv) {
   }
 
   // Getting parsed input
-  const fs::path datasetPath =
-      fs::path(vm["dataset-path"].as<std::string>()) / DATASET_FOLDERNAME;
+  const fs::path datasetPath = fs::path(vm["dataset-path"].as<std::string>());
   const std::string calibrationPattern =
       vm["calibration-pattern"].as<std::string>();
   const int32_t posesFormat = vm["poses-format"].as<int32_t>();
   const std::string logLevel = vm["log-level"].as<std::string>();
   const bool eye2hand = vm["eye-to-hand"].as<bool>();
+  std::optional<fs::path> intrinsicsPath;
+  if (vm.count("intrinsics-path")) {
+    intrinsicsPath = fs::path(vm["intrinsics-path"].as<std::string>());
+  }
 
   // Setting logger level;
   std::optional<Level> level = magic_enum::enum_cast<Level>(logLevel);
@@ -94,9 +102,12 @@ int32_t main(int32_t argc, char **argv) {
   console_bridge::setLogLevel(console_bridge::CONSOLE_BRIDGE_LOG_ERROR);
 
   // Checks dataset existance and its correctness
-  if (!validateDataset(datasetPath)) {
+  std::string datasetError;
+  if (!dataset_helpers::validateDataset(datasetPath, &datasetError)) {
     RCLCPP_ERROR(*logger, "Error: dataset doesn't exist or is corrupted. Set "
                           "debug level for more details.");
+    RCLCPP_DEBUG(*logger, "Dataset validation failed: %s",
+                 datasetError.c_str());
     ret(1);
   }
 
@@ -114,7 +125,17 @@ int32_t main(int32_t argc, char **argv) {
   auto data = std::make_unique<CalibrationData>();
 
   try {
-    findTarget2Cam(*pattern, *data);
+    if (intrinsicsPath) {
+      if (!data->readIntrinsics(*intrinsicsPath)) {
+        RCLCPP_ERROR(*logger, "Error: cannot read camera intrinsics from %s",
+                     intrinsicsPath->string().c_str());
+        ret(1);
+      }
+      RCLCPP_INFO(*logger, "Loaded camera intrinsics from %s",
+                  intrinsicsPath->string().c_str());
+    }
+
+    findTarget2Cam(*pattern, *data, intrinsicsPath.has_value());
     findGripper2Base(datasetPath, posesFormat, *data);
   } catch (const std::exception &e) {
     RCLCPP_ERROR(*logger, "%s", e.what());
@@ -148,10 +169,16 @@ int32_t main(int32_t argc, char **argv) {
                          data->R_target2cam, data->t_target2cam,
                          data->R_cam2gripper, data->t_cam2gripper);
 
+    const double rms = calculateRMS(*data);
+
     dumpToYAML(*data);
 
     RCLCPP_INFO(*logger, "Calibration completed! Saved to %s",
                 CALIBRATION_FILENAME);
+    RCLCPP_INFO(*logger,
+                "Validation RMS chessboard origin spread in gripper frame [m]: "
+                "%.6f",
+                rms);
   } catch (const std::exception &e) {
     RCLCPP_ERROR(*logger, "%s", e.what());
     ret(1);
