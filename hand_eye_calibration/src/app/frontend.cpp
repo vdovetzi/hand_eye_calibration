@@ -83,9 +83,10 @@ bool topicHasType(const std::vector<std::string> &types,
 }
 
 QString baseImageTopic(const QString &topic) {
-  constexpr const char *suffix = "/compressed";
-  return topic.endsWith(suffix) ? topic.left(topic.size() - std::strlen(suffix))
-                                : topic;
+  constexpr auto suffix = "/compressed";
+  constexpr qsizetype suffix_len = sizeof("/compressed") - 1;
+
+  return topic.endsWith(suffix) ? topic.left(topic.size() - suffix_len) : topic;
 }
 
 void appendLog(Ui::HandEyeFrontend &ui, const QString &message) {
