@@ -1,14 +1,9 @@
-#pragma once
+#include "hand_eye_calibration/helpers/validate_helpers.hpp"
 
-#include "geometry_msgs/msg/pose_stamped.hpp"
-#include <ros_babel_fish/babel_fish.hpp>
+namespace validate_helpers {
 
-using geometry_msgs::msg::PoseStamped;
-
-using namespace ros_babel_fish;
-
-inline void fillMessage(CompoundMessage &msg, const std::string &type,
-                        const PoseStamped &pose) {
+void fillMessage(ros_babel_fish::CompoundMessage &msg, const std::string &type,
+                 const PoseStamped &pose) {
   if (type == "geometry_msgs/msg/PoseStamped") {
     msg["header"]["frame_id"] = pose.header.frame_id;
     msg["header"]["stamp"] = pose.header.stamp;
@@ -32,3 +27,5 @@ inline void fillMessage(CompoundMessage &msg, const std::string &type,
     msg["orientation"]["w"] = pose.pose.orientation.w;
   }
 }
+
+} // namespace validate_helpers

@@ -1,14 +1,14 @@
 // https://github.com/ros/class_loader/pull/199
 #include <console_bridge/console.h>
 
-#include <hand_eye_calibration/calibrate_helpers.hpp>
-#include <hand_eye_calibration/test_helpers.hpp>
-#include <hand_eye_calibration/ui.hpp>
+#include <hand_eye_calibration/helpers/calibrate_helpers.hpp>
+#include <hand_eye_calibration/helpers/ros_helpers.hpp>
+#include <hand_eye_calibration/helpers/validate_helpers.hpp>
+#include <hand_eye_calibration/ui/cv_ui.hpp>
 
 // ROS
 #include <cv_bridge/cv_bridge.hpp>
 #include <image_transport/image_transport.hpp>
-#include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/image_encodings.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
@@ -17,13 +17,17 @@
 
 // Boost
 #include <boost/program_options.hpp>
+#include <magic_enum.hpp>
 
 using Level = rclcpp::Logger::Level;
+using namespace calibration_helpers;
+using namespace ros_helpers;
+using namespace ros_babel_fish;
+using namespace validate_helpers;
 using image_transport::ImageTransport;
 using image_transport::TransportHints;
 using sensor_msgs::image_encodings::BGR8;
 using sensor_msgs::msg::Image;
-using namespace std::chrono_literals;
 
 namespace po = boost::program_options;
 
@@ -105,32 +109,19 @@ int32_t main(int32_t argc, char **argv) {
   }
   console_bridge::setLogLevel(console_bridge::CONSOLE_BRIDGE_LOG_ERROR);
 
-  std::string armTopicType;
-
-  // TODO: do without sleep
-  bool armTopicFound = false;
-  bool imageTopicFound = false;
-  rclcpp::sleep_for(2s); // Small sleep for fetching actual topics
-  auto topics = node->get_topic_names_and_types();
-  for (const auto &[topic_name, topic_types] : topics) {
-    RCLCPP_DEBUG(*logger, "Topic: %s", topic_name.c_str());
-    if (topic_name == armTopicName) {
-      armTopicFound = true;
-      armTopicType = topic_types[0];
-
-      RCLCPP_DEBUG(*logger, "Arm topic has type: %s", armTopicType.c_str());
-    } else if (topic_name == imageTopicName) {
-      imageTopicFound = true;
-    }
-  }
-
-  if (!armTopicFound) {
-    RCLCPP_ERROR(*logger, "Error: provide existing arm-topic");
+  const auto armTopicTypes = waitForTopic(node, armTopicName);
+  if (!armTopicTypes) {
+    RCLCPP_ERROR(*logger, "Error: arm-topic '%s' was not found",
+                 armTopicName.c_str());
     ret(1);
   }
+  const std::string armTopicType = armTopicTypes->front();
+  RCLCPP_DEBUG(*logger, "Arm topic has type: %s", armTopicType.c_str());
 
-  if (!imageTopicFound) {
-    RCLCPP_ERROR(*logger, "Error: provide existing image-topic");
+  const auto imageTopicTypes = waitForTopic(node, imageTopicName);
+  if (!imageTopicTypes) {
+    RCLCPP_ERROR(*logger, "Error: image-topic '%s' was not found",
+                 imageTopicName.c_str());
     ret(1);
   }
 
@@ -178,8 +169,8 @@ int32_t main(int32_t argc, char **argv) {
   auto rvizGripperPub =
       node->create_publisher<PoseStamped>("calibration_pose_gripper", 1);
 
-  auto ui = std::make_unique<ui::cvUI>(pattern->getImgPoints(), clicked_ind,
-                                       point_guard, image, image_guard);
+  auto ui = std::make_unique<cv_ui::cvUI>(pattern->getImgPoints(), clicked_ind,
+                                          point_guard, image, image_guard);
 
   auto data = std::make_unique<CalibrationData>();
 

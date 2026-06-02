@@ -1,8 +1,17 @@
 #pragma once
 
-#include <opencv2/opencv.hpp>
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <limits>
+#include <mutex>
+#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <optional>
+#include <vector>
 
-namespace ui {
+namespace cv_ui {
 
 constexpr const char *TEST_WINDOWNAME = "Test window";
 constexpr const int32_t BASE_RADIUS = 6; // Base circle radius
@@ -203,4 +212,4 @@ private:
     }
   }
 };
-}; // namespace ui
+}; // namespace cv_ui

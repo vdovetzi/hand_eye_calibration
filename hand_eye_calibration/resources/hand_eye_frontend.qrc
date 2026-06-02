@@ -1,0 +1,5 @@
+<RCC>
+  <qresource prefix="/hand_eye_calibration">
+    <file>donation_usdt_erc20.png</file>
+  </qresource>
+</RCC>

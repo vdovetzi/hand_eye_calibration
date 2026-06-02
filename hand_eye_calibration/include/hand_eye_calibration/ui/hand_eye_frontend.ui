@@ -1,0 +1,735 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>HandEyeFrontend</class>
+ <widget class="QMainWindow" name="HandEyeFrontend">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1180</width>
+    <height>760</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Hand-Eye Calibration</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout" name="rootLayout">
+    <item>
+     <widget class="QSplitter" name="mainSplitter">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+      <widget class="QStackedWidget" name="mainStack">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="settingsPage">
+       <layout class="QVBoxLayout" name="settingsLayout">
+        <item>
+         <layout class="QHBoxLayout" name="settingsHeaderLayout">
+          <item>
+           <widget class="QLabel" name="settingsTitleLabel">
+            <property name="text">
+             <string>Settings</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="settingsHeaderSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="requiredGroup">
+          <property name="title">
+           <string>Required</string>
+          </property>
+          <layout class="QGridLayout" name="requiredGrid">
+           <item row="0" column="0">
+            <widget class="QLabel" name="armTopicLabel">
+             <property name="text">
+              <string>Arm topic</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1" colspan="2">
+            <widget class="QComboBox" name="armTopicCombo">
+             <property name="editable">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="imageTopicLabel">
+             <property name="text">
+              <string>Camera topic</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1" colspan="2">
+            <widget class="QComboBox" name="imageTopicCombo">
+             <property name="editable">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="datasetPathLabel">
+             <property name="text">
+              <string>Dataset folder</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QLineEdit" name="datasetPathEdit"/>
+           </item>
+           <item row="2" column="2">
+            <widget class="QPushButton" name="datasetBrowseButton">
+             <property name="text">
+              <string>Browse</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="calibrationPathLabel">
+             <property name="text">
+              <string>Calibration path</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QLineEdit" name="calibrationPathEdit">
+             <property name="text">
+              <string>calibration.yaml</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="2">
+            <widget class="QPushButton" name="calibrationBrowseButton">
+             <property name="text">
+              <string>Browse</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0">
+            <widget class="QLabel" name="posesFormatLabel">
+             <property name="text">
+              <string>Pose format</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="1" colspan="2">
+            <widget class="QSpinBox" name="posesFormatSpin">
+             <property name="minimum">
+              <number>1</number>
+             </property>
+             <property name="maximum">
+              <number>7</number>
+             </property>
+             <property name="value">
+              <number>1</number>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0">
+            <widget class="QLabel" name="patternTypeLabel">
+             <property name="text">
+              <string>Pattern type</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="1" colspan="2">
+            <widget class="QComboBox" name="patternTypeCombo">
+             <item>
+              <property name="text">
+               <string>Select pattern type</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>ArUco</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Chessboard</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>ChArUco</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QStackedWidget" name="patternStack">
+          <property name="currentIndex">
+           <number>0</number>
+          </property>
+          <widget class="QWidget" name="emptyPatternPage"/>
+          <widget class="QWidget" name="arucoPatternPage">
+           <layout class="QGridLayout" name="arucoGrid">
+            <item row="0" column="0">
+             <widget class="QLabel" name="arucoDictLabel">
+             <property name="text">
+               <string>Dictionary</string>
+             </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QSpinBox" name="arucoDictSpin">
+              <property name="minimum">
+               <number>4</number>
+              </property>
+              <property name="maximum">
+               <number>7</number>
+              </property>
+              <property name="value">
+               <number>4</number>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="arucoIdLabel">
+             <property name="text">
+               <string>Marker id</string>
+             </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QSpinBox" name="arucoIdSpin">
+              <property name="maximum">
+               <number>999</number>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="arucoSizeLabel">
+             <property name="text">
+               <string>Marker size [m]</string>
+             </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QDoubleSpinBox" name="arucoMarkerSizeSpin">
+              <property name="decimals">
+               <number>4</number>
+              </property>
+              <property name="maximum">
+               <double>10.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.001000000000000</double>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="chessboardPatternPage">
+           <layout class="QGridLayout" name="chessboardGrid">
+            <item row="0" column="0">
+             <widget class="QLabel" name="chessRowsLabel">
+             <property name="text">
+               <string>Rows</string>
+             </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QSpinBox" name="chessRowsSpin">
+              <property name="minimum">
+               <number>1</number>
+              </property>
+              <property name="maximum">
+               <number>100</number>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="chessColsLabel">
+             <property name="text">
+               <string>Columns</string>
+             </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QSpinBox" name="chessColsSpin">
+              <property name="minimum">
+               <number>1</number>
+              </property>
+              <property name="maximum">
+               <number>100</number>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="chessCellSizeLabel">
+             <property name="text">
+               <string>Cell size [m]</string>
+             </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QDoubleSpinBox" name="chessCellSizeSpin">
+              <property name="decimals">
+               <number>4</number>
+              </property>
+              <property name="maximum">
+               <double>10.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.001000000000000</double>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="charucoPatternPage">
+           <layout class="QGridLayout" name="charucoGrid">
+            <item row="0" column="0">
+             <widget class="QLabel" name="charucoRowsLabel">
+             <property name="text">
+               <string>Rows</string>
+             </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QSpinBox" name="charucoRowsSpin">
+              <property name="minimum">
+               <number>1</number>
+              </property>
+              <property name="maximum">
+               <number>100</number>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="charucoColsLabel">
+             <property name="text">
+               <string>Columns</string>
+             </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QSpinBox" name="charucoColsSpin">
+              <property name="minimum">
+               <number>1</number>
+              </property>
+              <property name="maximum">
+               <number>100</number>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="charucoCellSizeLabel">
+             <property name="text">
+               <string>Cell size [m]</string>
+             </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QDoubleSpinBox" name="charucoCellSizeSpin">
+              <property name="decimals">
+               <number>4</number>
+              </property>
+              <property name="maximum">
+               <double>10.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.001000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="charucoMarkerSizeLabel">
+             <property name="text">
+               <string>Marker size [m]</string>
+             </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QDoubleSpinBox" name="charucoMarkerSizeSpin">
+              <property name="decimals">
+               <number>4</number>
+              </property>
+              <property name="maximum">
+               <double>10.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.001000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="0">
+             <widget class="QLabel" name="charucoDictLabel">
+             <property name="text">
+               <string>Dictionary</string>
+             </property>
+             </widget>
+            </item>
+            <item row="4" column="1">
+             <widget class="QSpinBox" name="charucoDictSpin">
+              <property name="minimum">
+               <number>4</number>
+              </property>
+              <property name="maximum">
+               <number>7</number>
+              </property>
+              <property name="value">
+               <number>4</number>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="0">
+             <widget class="QLabel" name="charucoIdLabel">
+             <property name="text">
+               <string>Marker id</string>
+             </property>
+             </widget>
+            </item>
+            <item row="5" column="1">
+             <widget class="QSpinBox" name="charucoIdSpin">
+              <property name="maximum">
+               <number>999</number>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="optionalGroup">
+          <property name="title">
+           <string>Optional</string>
+          </property>
+          <layout class="QGridLayout" name="optionalGrid">
+           <item row="0" column="0">
+            <widget class="QLabel" name="intrinsicsPathLabel">
+             <property name="text">
+              <string>Intrinsics YAML</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLineEdit" name="intrinsicsPathEdit"/>
+           </item>
+           <item row="0" column="2">
+            <widget class="QPushButton" name="intrinsicsBrowseButton">
+             <property name="text">
+              <string>Browse</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QCheckBox" name="eyeToHandCheck">
+             <property name="text">
+              <string>Eye to hand</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="statisticsOptionsGroup">
+          <property name="title">
+           <string>Dataset Statistics</string>
+          </property>
+          <layout class="QVBoxLayout" name="statisticsOptionsLayout">
+           <item>
+            <widget class="QCheckBox" name="translationStatsCheck">
+             <property name="text">
+              <string>Translation coverage</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+           <widget class="QCheckBox" name="rotationStatsCheck">
+             <property name="text">
+              <string>Rotation coverage</string>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="validationRmsStatsCheck">
+             <property name="toolTip">
+              <string>How much the target position moves in the gripper frame. Closer to 0 is better.</string>
+             </property>
+             <property name="text">
+              <string>Target lock RMS</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <spacer name="settingsBottomSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>16</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="settingsActionsLayout">
+          <item>
+           <widget class="QLabel" name="creditsLabel">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+              <horstretch>1</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>620</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p style=&quot;margin:0; white-space:nowrap;&quot;&gt;made by &lt;a href=&quot;https://github.com/vdovetzi&quot;&gt;&lt;span style=&quot;text-decoration: underline; color:#2a6db0;&quot;&gt;vdovetzi&lt;/span&gt;&lt;/a&gt; with love to robotics and community ❤️&lt;/p&gt;&lt;p style=&quot;margin:2px 0 0 0; white-space:nowrap;&quot;&gt;&lt;a href=&quot;donate://coffee&quot;&gt;&lt;span style=&quot;text-decoration: underline; color:#666666;&quot;&gt;buy me a coffee ☕&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="openExternalLinks">
+             <bool>true</bool>
+            </property>
+            <property name="wordWrap">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="settingsActionsSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="refreshTopicsButton">
+            <property name="text">
+             <string>Refresh</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="saveSettingsButton">
+            <property name="text">
+             <string>Save Settings</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="nextButton">
+            <property name="minimumSize">
+             <size>
+              <width>96</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>96</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>→</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="workflowPage">
+       <layout class="QVBoxLayout" name="workflowLayout">
+        <item>
+         <widget class="QProgressBar" name="progressBar">
+          <property name="value">
+           <number>0</number>
+          </property>
+          <property name="textVisible">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="workflowActionsLayout">
+          <item>
+           <widget class="QPushButton" name="backToSettingsButton">
+            <property name="minimumSize">
+             <size>
+              <width>96</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>96</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>←</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="captureSampleButton">
+            <property name="maximumSize">
+             <size>
+              <width>160</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Capture</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="removeSampleButton">
+            <property name="maximumSize">
+             <size>
+              <width>160</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Remove sample</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="calibrateButton">
+            <property name="maximumSize">
+             <size>
+              <width>160</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="text">
+             <string>Calibrate</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="workflowActionsSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QSplitter" name="workflowContentSplitter">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+           <widget class="QGroupBox" name="statsGroup">
+            <property name="title">
+             <string>Dataset Statistics</string>
+            </property>
+            <layout class="QVBoxLayout" name="statsLayout">
+             <item>
+              <widget class="QListWidget" name="statsList"/>
+             </item>
+            </layout>
+           </widget>
+           <widget class="QGroupBox" name="cameraGroup">
+            <property name="title">
+             <string>Camera Stream</string>
+            </property>
+            <layout class="QVBoxLayout" name="cameraPreviewLayout">
+             <item>
+              <widget class="QLabel" name="cameraPreviewLabel">
+               <property name="minimumSize">
+                <size>
+                 <width>420</width>
+                 <height>280</height>
+                </size>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
+               <property name="text">
+                <string>Camera stream will appear after setup.</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+     <widget class="QWidget" name="logPanel">
+      <layout class="QVBoxLayout" name="logPanelLayout">
+       <item>
+        <widget class="QGroupBox" name="logGroup">
+         <property name="title">
+          <string>Log</string>
+         </property>
+         <layout class="QVBoxLayout" name="logLayout">
+          <item>
+	           <widget class="QPlainTextEdit" name="logText">
+	            <property name="readOnly">
+	             <bool>true</bool>
+	            </property>
+	           </widget>
+	          </item>
+	         </layout>
+	        </widget>
+	       </item>
+	      </layout>
+	     </widget>
+	    </widget>
+	   </item>
+	  </layout>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
